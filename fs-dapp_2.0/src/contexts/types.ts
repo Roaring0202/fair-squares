@@ -31,8 +31,8 @@ export interface AccountContextState {
 
 export interface CouncilSessionContextState {
   approved: boolean;
-  selectedProposal: InjectedAccountWithMeta | undefined;
-  proposals:InjectedAccountWithMeta[];
+  selectedProposal: Proposal | undefined;
+  proposals:Proposal[];
   role_in_session: string;
   session_closed: boolean;
   ayes: number;
@@ -40,7 +40,15 @@ export interface CouncilSessionContextState {
   council_members: InjectedAccountWithMeta[];
   datas:DataType[]
 }
-
+export interface Proposal{
+  voter_id: InjectedAccountWithMeta | undefined;
+  Referendum_account: InjectedAccountWithMeta | undefined;
+  session_closed: boolean;
+  approved:boolean;
+  ayes: number;
+  nay: number;
+  hash:string;
+}
 export interface DataType {
   name: string|undefined;
   role: string;

@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, ReactNode } from 'react';
-import { CouncilSessionContextState,DataType } from './types';
+import { CouncilSessionContextState,DataType,Proposal } from './types';
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 
 const initialSession: CouncilSessionContextState = {
@@ -16,8 +16,8 @@ const initialSession: CouncilSessionContextState = {
 
 type Action =
   | { type: 'SET_APPROVAL'; payload: boolean }
-  | { type: 'SET_SELECTED_PROPOSAL'; payload: InjectedAccountWithMeta }
-  | { type: 'SET_PROPOSALS'; payload: InjectedAccountWithMeta[] }
+  | { type: 'SET_SELECTED_PROPOSAL'; payload: Proposal }
+  | { type: 'SET_PROPOSALS'; payload: Proposal[] }
   | { type: 'SET_ROLE_IN_SESSION'; payload: string }
   | { type: 'SET_SESSION_CLOSE'; payload: boolean }
   | { type: 'SET_AYES'; payload: number }
