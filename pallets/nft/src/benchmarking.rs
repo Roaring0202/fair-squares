@@ -35,7 +35,7 @@ mod benchmarks {
 
     #[benchmark]
     fn create_collection(){
-        let metadata0: BoundedVec<u8, <Test as Config>::MaxReasonLength>=
+        let metadata0: BoundedVec<u8, <T as pallet_roles::Config>::MaxReasonLength>=
 			b"I love cheese".to_vec().try_into().unwrap();
         let caller = create_account::<T>("caller", 0);
 		let caller_signed = <T as frame_system::Config>::RuntimeOrigin::from(RawOrigin::Signed(caller.clone()));
