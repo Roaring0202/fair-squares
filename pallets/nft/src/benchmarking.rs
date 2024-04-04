@@ -35,12 +35,15 @@ mod benchmarks {
 
     #[benchmark]
     fn create_collection(){
+        let metadata0: BoundedVec<u8, <Test as Config>::MaxReasonLength>=
+			b"I love cheese".to_vec().try_into().unwrap();
         let caller = create_account::<T>("caller", 0);
 		let caller_signed = <T as frame_system::Config>::RuntimeOrigin::from(RawOrigin::Signed(caller.clone()));
         let _ = Roles::Pallet::<T>::set_role(
 			caller_signed.clone(),
 			caller.clone(),
-			Roles::Accounts::SERVICER
+			Roles::Accounts::SERVICER,
+            metadata0,
 		);
 
         assert_eq!(Roles::Pallet::<T>::get_requested_role(caller.clone()).is_some(),true);
