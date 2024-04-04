@@ -50,10 +50,7 @@ export default function Roles() {
       dispatch0({ type: 'SET_BALANCE', payload: balance1 });
     });
 
-    api.query.backgroundCouncil.members((who: InjectedAccountWithMeta[]) => {
-
-      dispatch1({ type: 'SET_COUNCIL_MEMBERS', payload: who as InjectedAccountWithMeta[] });
-    });/*
+   /*
     if (web3Name) {
       (async () => {
         let data_all = await queryPublishedCredentials(web3Name);

@@ -20,6 +20,7 @@ export default function Council() {
   const { role, balance, dispatch0 } = useAccountContext();
   const { session_closed,approved,role_in_session,nay,ayes,council_members,selectedProposal,proposals, datas,dispatch1 } = useConcilSessionContext();
   
+  const[adds,setAdds]=useState<string[]>([])
   const getproposal= (item:MouseEvent)=>{
     
     let txt=item.currentTarget.textContent
@@ -38,10 +39,9 @@ export default function Council() {
     if(selectedProposal){
       console.log(selectedAccount);
       console.log(council_members);
-    }
-    
-
+    }   
   }
+
    function getDatas(){
     let tdata:DataType[]=[];
     let props:Proposal[]=[];
@@ -88,6 +88,22 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
   
    useEffect(() => {
     if (!api || !selectedAccount) return;
+    api.query.backgroundCouncil.members((who: any[]) => {
+      
+      let members:InjectedAccountWithMeta[]=[];
+      
+      who.forEach((x)=>{
+        let y=x.toHuman();
+        accounts.forEach((ac)=>{
+          if(ac.address===y){
+            members.push(ac)
+          }
+        })
+      })
+      //console.log(members)
+      
+      dispatch1({ type: 'SET_COUNCIL_MEMBERS', payload: members });
+    });
     
     getDatas();    
     
@@ -99,6 +115,7 @@ const style1= { width: 410, height:150, background:`white`};
 const style2= { width: 410, height:150, background:`red`};
 const style3= { width: 410, height:150, background:`green`};
   return((selectedAccount && council_members.includes(selectedAccount))?
+  
   <div id="scrollableDiv"
   style={{
     height: 400,
