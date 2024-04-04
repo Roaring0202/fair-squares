@@ -363,7 +363,7 @@ pub mod pallet {
 				Accounts::INVESTOR => {				
 					
 					ensure!(!InvestorLog::<T>::contains_key(&caller), Error::<T>::RoleAlreadyGranted);	
-					Ok(Investor::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Investor::<T>::new(account.clone(),infos.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
@@ -381,12 +381,12 @@ pub mod pallet {
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);					
-					Ok(HouseSeller::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(HouseSeller::<T>::new(account.clone(),infos.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
 				Accounts::TENANT => {
 					ensure!(!TenantLog::<T>::contains_key(&caller), Error::<T>::RoleAlreadyGranted);
-					Ok(Tenant::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Tenant::<T>::new(account.clone(),infos.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
@@ -401,7 +401,7 @@ pub mod pallet {
 				Accounts::SERVICER => {
 					ensure!(!requested, <Error<T>>::AlreadyWaiting);
 					ensure!(!ServicerLog::<T>::contains_key(&caller), Error::<T>::RoleAlreadyGranted);
-					Ok(Servicer::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Servicer::<T>::new(account.clone(),infos.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
@@ -417,7 +417,7 @@ pub mod pallet {
 					let notary = <T as frame_system::Config>::RuntimeOrigin::from(RawOrigin::Signed(
 						account.clone(),
 					));
-					Ok(Notary::<T>::new(notary,infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Notary::<T>::new(notary,infos.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
 				Accounts::REPRESENTATIVE => {
@@ -427,7 +427,7 @@ pub mod pallet {
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
-					Ok(Representative::<T>::new(account.clone(),infos))
+					Ok(Representative::<T>::new(account.clone(),infos.clone()))
 						.map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
@@ -439,7 +439,7 @@ pub mod pallet {
 				Accounts::INVESTOR | Accounts::TENANT | Accounts::REPRESENTATIVE | Accounts::NONE
 			);
 			if need_approval {
-				Self::start_council_session(account.clone(),account_type).ok();	
+				Self::start_council_session(account.clone(),account_type,infos.clone()).ok();	
 			
 			// deposit event
 			let index:u32 = Coll::Pallet::<T,Instance2>::proposal_count();

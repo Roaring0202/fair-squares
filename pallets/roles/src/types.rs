@@ -64,7 +64,7 @@ pub enum Accounts {
 	NONE,
 }
 
-#[derive(Clone,Copy, Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Proposal<T: Config>{
@@ -75,12 +75,13 @@ pub struct Proposal<T: Config>{
 	pub proposal_index: u32,
 	pub session_closed: bool, 
 	pub approved: Approvals,
+	pub infos: BoundedVecOf<T>
 }
 impl<T: Config> Proposal<T>{
-	pub fn new(acc:T::AccountId, role: Option<Accounts>,proposal: T::Hash) -> Self{
+	pub fn new(acc:T::AccountId, role: Option<Accounts>,proposal: T::Hash,infos: BoundedVecOf<T>) -> Self{
 		let now = <frame_system::Pallet<T>>::block_number();
 		let proposal_hash =  T::Hashing::hash_of(&proposal);
-		let proposal = Proposal {account_id: acc,role,block: now,proposal_hash,proposal_index:0,session_closed:false,approved:Approvals::AWAITING};
+		let proposal = Proposal {account_id: acc,role,block: now,proposal_hash,proposal_index:0,session_closed:false,approved:Approvals::AWAITING,infos};
 		proposal
 	}
 }

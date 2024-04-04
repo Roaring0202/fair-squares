@@ -13,7 +13,7 @@ const RolesApp: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [warning, setWarning] = useState(false);
   const { api, selectedAccount } = useAppContext();
-  const { role } = useAccountContext();
+  const { role,infos } = useAccountContext();
 
   const showDrawer = () => {
     setOpen(true);
@@ -28,7 +28,7 @@ const RolesApp: React.FC = () => {
       console.log('No Roles possible!');
     } else {
       let who = selectedAccount.address;
-      const tx = await api.tx.rolesModule.setRole(who, ROLES[num].toString());
+      const tx = await api.tx.rolesModule.setRole(who, ROLES[num].toString(),infos);
       const fees = await tx.paymentInfo(who);
       const injector = await web3FromAddress(who);
       tx.signAndSend(who, { signer: injector.signer }, ({ status, events, dispatchError }) => {

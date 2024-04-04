@@ -20,7 +20,7 @@ export default function Council() {
   const { role, balance, dispatch0 } = useAccountContext();
   const { session_closed,approved,role_in_session,nay,ayes,council_members,selectedProposal,proposals, datas,dispatch1 } = useConcilSessionContext();
   
-  const[adds,setAdds]=useState<string[]>([])
+  const[infos,setInfos]=useState('')
   const getproposal= (item:MouseEvent)=>{
     
     let txt=item.currentTarget.textContent
@@ -61,6 +61,7 @@ export default function Council() {
       let status = Prop.approved.toString();
       let referendum = Prop.sessionClosed.toString();
       let hash = Prop.proposalHash.toString();
+      let infos='Nothing yet';
 
       api.query.backgroundCouncil.voting(hash,(data:any)=>{
         let data1 = data.toHuman();
@@ -71,7 +72,7 @@ export default function Council() {
             dispatch1({ type: 'SET_NAY', payload: no });
           }
       })
-      let dtype:DataType={name:acc1.meta.name,role:r_session,address: Prop.accountId,status,referendum,hash};      
+      let dtype:DataType={name:acc1.meta.name,role:r_session,address: Prop.accountId,status,referendum,hash,infos};      
       let prop0:Proposal={voter_id:selectedAccount,Referendum_account:acc1,session_closed:referendum,approved:status,ayes,nay,hash}
       props.push(prop0);
       tdata.push(dtype);      

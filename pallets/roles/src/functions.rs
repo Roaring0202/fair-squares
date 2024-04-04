@@ -198,7 +198,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 
-	pub fn start_council_session(account: T::AccountId,account_type: Accounts) -> DispatchResultWithPostInfo{
+	pub fn start_council_session(account: T::AccountId,account_type: Accounts,infos: BoundedVecOf<T>) -> DispatchResultWithPostInfo{
 		//Create proposal
 		let proposal0 = 
 			Call::<T>::account_approval{
@@ -233,7 +233,7 @@ impl<T: Config> Pallet<T> {
 		for proposal_hash in proposal_hashes{
 			let prop0 = Coll::Pallet::<T,Instance2>::proposal_of(proposal_hash.clone()).unwrap();
 			if proposal == prop0{
-				let mut proposal_all = Proposal::<T>::new(account.clone(), Some(account_type),proposal_hash.clone());
+				let mut proposal_all = Proposal::<T>::new(account.clone(), Some(account_type),proposal_hash.clone(),infos.clone());
 				proposal_all.proposal_index = index;
 				proposal_all.proposal_hash = proposal_hash;
 				RequestedRoles::<T>::insert(&account, proposal_all);

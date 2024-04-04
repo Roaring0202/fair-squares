@@ -27,6 +27,7 @@ export interface AccountContextState {
   address: Address;
   role: AccountRole;
   balance: BN | undefined;
+  infos:string;
 }
 
 export interface CouncilSessionContextState {
@@ -55,7 +56,8 @@ export interface DataType {
   address:string;
   status:string;
   referendum:string;
-  hash:string; 
+  hash:string;
+  infos:string; 
 }
 
 export const isRoleValid = (_role: string): boolean => {

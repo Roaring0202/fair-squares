@@ -1,4 +1,5 @@
 pub use super::*;
+
 impl<T: Config> Pallet<T> {
     pub fn get_formatted_call(call: <T as Config>::RuntimeCall) -> Option<<T as Coll::Config<Instance1>>::Proposal> {
 		let call_encoded: Vec<u8> = call.encode();
@@ -49,6 +50,12 @@ impl<T: Config> Pallet<T> {
 				collection,
 				item_id
 			};
+		let coll_id:T::NftCollectionId=collection.value().into();
+		let infos0=Nft::Pallet::<T>::items(coll_id,item_id).unwrap();
+		let infos1= infos0.metadata;
+		let info_vec = infos1.into_inner();
+		let infos:Roles::BoundedVecOf<T> = BoundedVec::truncate_from(info_vec);
+
 		let proposal = Self::get_formatted_call(proposal0.into()).unwrap();		
 						
 		let proposal_len:u32 = proposal.using_encoded(|p| p.len() as u32);
@@ -71,7 +78,7 @@ impl<T: Config> Pallet<T> {
 		for proposal_hash in proposal_hashes{
 			let prop0 = Coll::Pallet::<T,Instance1>::proposal_of(proposal_hash.clone()).unwrap();
 			if proposal == prop0{
-				let mut proposal_all = ProposalOf::<T>::new(account.clone(), Some(Roles::Accounts::NONE),proposal_hash.clone());
+				let mut proposal_all = ProposalOf::<T>::new(account.clone(), Some(Roles::Accounts::NONE),proposal_hash.clone(),infos.clone());
 				proposal_all.proposal_index = index;
 				proposal_all.proposal_hash = proposal_hash;
 				SellerProposal::<T>::insert(&account, proposal_all);

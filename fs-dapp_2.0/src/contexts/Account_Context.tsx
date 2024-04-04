@@ -6,12 +6,14 @@ const initialAccount: AccountContextState = {
   address: '',
   role: [],
   balance: undefined,
+  infos: 'No Information Provided'
 };
 
 type Action =
   | { type: 'SET_ADDRESS'; payload: string }
   | { type: 'SET_ROLES'; payload: string[] }
-  | { type: 'SET_BALANCE'; payload: BN };
+  | { type: 'SET_BALANCE'; payload: BN }
+  | { type: 'SET_INFOS'; payload: string };
 
 function reducer(state: AccountContextState, action: Action): AccountContextState {
   switch (action.type) {
@@ -21,6 +23,8 @@ function reducer(state: AccountContextState, action: Action): AccountContextStat
       return { ...state, role: action.payload };
     case 'SET_BALANCE':
       return { ...state, balance: action.payload };
+    case 'SET_INFOS':
+      return { ...state, infos:action.payload};
 
     default:
       return state;
@@ -38,13 +42,14 @@ type Props = {
   children: ReactNode;
 };
 export function AccountProvider({ children }: Props) {
-  const [{ address, role, balance }, dispatch0] = useReducer(reducer, initialAccount);
+  const [{ address, role, balance,infos }, dispatch0] = useReducer(reducer, initialAccount);
   return (
     <AccountContext.Provider
       value={{
         address,
         role,
         balance,
+        infos,
         dispatch0,
       }}
     >
