@@ -329,6 +329,7 @@ impl pallet_roles::Config for Test {
 	type MaxMembers = MaxMembers;
 	type MaxRoles= MaxRoles;
 	type CheckPeriod = CheckPeriod;
+	type MaxReasonLength = ConstU32<42>;
 	type BackgroundCouncilOrigin =
 		pallet_collective::EnsureProportionAtLeast<Self::AccountId, BackgroundCollective, 1, 2>;
 }

@@ -2,7 +2,7 @@ use crate as pallet_roles;
 use frame_support::{
 	parameter_types,
 	derive_impl,
-	traits::{ConstU16,ConstU64},
+	traits::{ConstU16,ConstU64, ConstU32},
 	weights::Weight,
 };
 use sp_core::{crypto::AccountId32, H256};
@@ -81,6 +81,7 @@ impl pallet_roles::Config for Test {
 	type MaxMembers = MaxMembers;
 	type MaxRoles= MaxRoles;
 	type CheckPeriod = CheckPeriod;
+	type MaxReasonLength = ConstU32<42>;
 	type BackgroundCouncilOrigin =
 		pallet_collective::EnsureProportionAtLeast<Self::AccountId, BackgroundCollective, 1, 2>;
 }

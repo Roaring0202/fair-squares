@@ -271,6 +271,7 @@ parameter_types! {
 	#[derive(Clone)]
 	pub const MaxRoles:u32 =3;
 	pub const CheckPeriod: BlockNumber = MINUTES;
+	pub const MaxReasonLength:u32 = 300;
 }
 impl pallet_roles::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -279,6 +280,7 @@ impl pallet_roles::Config for Runtime {
 	type MaxMembers = MaxMembers;
 	type MaxRoles = MaxRoles;
 	type CheckPeriod = CheckPeriod;
+	type MaxReasonLength = MaxReasonLength;
 	type BackgroundCouncilOrigin =
 		pallet_collective::EnsureProportionAtLeast<AccountId, BackgroundCollective, 1, 2>;
 	

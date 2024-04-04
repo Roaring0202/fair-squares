@@ -24,6 +24,7 @@ pub type BalanceOf<T> =
 	<<T as pallet::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type BlockNumberOf<T> = BlockNumberFor<T>;
+pub type BoundedVecOf<T> = BoundedVec<u8, <T as pallet::Config>::MaxReasonLength>;
 
 #[derive(Clone, Encode, Decode, Default, PartialEq, Eq, TypeInfo, Copy, Serialize, Deserialize, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -86,7 +87,7 @@ impl<T: Config> Proposal<T>{
 
 //-------------------------------------------------------------------------------------
 //-------------INVESTOR STRUCT DECLARATION & IMPLEMENTATION_BEGIN----------------------
-#[derive(Clone,Copy, Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Investor<T: Config> {
@@ -94,6 +95,7 @@ pub struct Investor<T: Config> {
 	pub age: BlockNumberOf<T>,
 	pub share: BalanceOf<T>,
 	pub selections: u32,
+	pub infos: BoundedVecOf<T>
 }
 
 impl<T: Config> Investor<T>
@@ -102,11 +104,11 @@ impl<T: Config> Investor<T>
 {
 	//-------------------------------------------------------------------
 	//-------------NEW INVESTOR CREATION METHOD_BEGIN--------------------
-	pub fn new(acc: T::AccountId,) -> Self {
+	pub fn new(acc: T::AccountId,infos:BoundedVecOf<T>) -> Self {
 		let now = <frame_system::Pallet<T>>::block_number();
 
 		let inv =
-			Investor { account_id: acc.clone(), age: now, share: Zero::zero(), selections: 0 };
+			Investor { account_id: acc.clone(), age: now, share: Zero::zero(), selections: 0,infos };
 
 		InvestorLog::<T>::insert(acc, &inv);
         inv
@@ -120,13 +122,14 @@ impl<T: Config> Investor<T>
 
 //--------------------------------------------------------------------------------------
 //-------------HOUSE SELLER STRUCT DECLARATION & IMPLEMENTATION_BEGIN----------------------
-#[derive(Clone,Copy,Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone,Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct HouseSeller<T: Config> {
 	pub account_id: T::AccountId,
 	pub age: BlockNumberOf<T>,
 	pub activated: bool,
+	pub infos: BoundedVecOf<T>
 }
 impl<T: Config> HouseSeller<T>
 /*where
@@ -134,11 +137,11 @@ impl<T: Config> HouseSeller<T>
 {
 	//--------------------------------------------------------------------
 	//-------------HOUSE SELLER CREATION METHOD_BEGIN----------------------
-	pub fn new(acc: T::AccountId) -> Self {
+	pub fn new(acc: T::AccountId,infos: BoundedVecOf<T>) -> Self {
 		let now = <frame_system::Pallet<T>>::block_number();
 		let hw = HouseSeller { 
             account_id: acc.clone(), 
-            age: now, activated: false
+            age: now, activated: false,infos
         };
 
 		SellerApprovalList::<T>::mutate(|list| {
@@ -156,7 +159,7 @@ impl<T: Config> HouseSeller<T>
 
 //--------------------------------------------------------------------------------------
 //-------------TENANT STRUCT DECLARATION & IMPLEMENTATION_BEGIN---------------------------
-#[derive(Clone, Copy,Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Tenant<T: Config> {
@@ -168,9 +171,10 @@ pub struct Tenant<T: Config> {
 	pub remaining_rent: BalanceOf<T>,
 	pub remaining_payments: u8,
 	pub registered: bool,
+	pub infos: BoundedVecOf<T>
 }
 impl<T: Config> Tenant<T> {
-	pub fn new(acc: T::AccountId) -> Self {
+	pub fn new(acc: T::AccountId,infos: BoundedVecOf<T>) -> Self {
 		let now = <frame_system::Pallet<T>>::block_number();
 		let tenant = Tenant {
 			account_id: acc.clone(),
@@ -181,6 +185,7 @@ impl<T: Config> Tenant<T> {
 			remaining_rent: Zero::zero(),
 			remaining_payments: 0,
 			registered: false,
+			infos
 		};
 		TenantLog::<T>::insert(acc, &tenant);
         tenant
@@ -191,19 +196,20 @@ impl<T: Config> Tenant<T> {
 
 //--------------------------------------------------------------------------------------
 //-------------Servicer STRUCT DECLARATION & IMPLEMENTATION_BEGIN---------------------------
-#[derive(Clone, Copy,Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Servicer<T: Config> {
 	pub account_id: T::AccountId,
 	pub age: BlockNumberOf<T>,
 	pub activated: bool,
+	pub infos: BoundedVecOf<T>
 }
 impl<T: Config> Servicer<T> {
-	pub fn new(acc: T::AccountId) -> Self {
+	pub fn new(acc: T::AccountId,infos: BoundedVecOf<T>) -> Self {
 		let now = <frame_system::Pallet<T>>::block_number();
 		let sv =
-			Servicer { account_id: acc.clone(), age: now, activated: false};
+			Servicer { account_id: acc.clone(), age: now, activated: false,infos};
 
 		ServicerApprovalList::<T>::mutate(|list| {
 			list.try_push(sv.clone()).map_err(|_| "Max number of requests reached").ok();
@@ -227,6 +233,7 @@ pub struct Representative<T: Config> {
 	pub activated: bool,
 	pub assets_accounts: BoundedVec<T::AccountId,T::MaxRoles>,
 	pub index: u32,
+	pub infos: BoundedVecOf<T>
 }
 impl<T: Config> Representative<T>
 /*where
@@ -234,7 +241,7 @@ impl<T: Config> Representative<T>
 {
 	//--------------------------------------------------------------------
 	//-------------REPRESENTATIVE CREATION METHOD_BEGIN----------------------
-	pub fn new(acc: T::AccountId) -> Self {
+	pub fn new(acc: T::AccountId,infos: BoundedVecOf<T>) -> Self {
 		let now = <frame_system::Pallet<T>>::block_number();
 
 		if !RepresentativeLog::<T>::contains_key(acc.clone()) {
@@ -244,6 +251,7 @@ impl<T: Config> Representative<T>
 				activated: false,
 				assets_accounts: BoundedVec::new(),
 				index: Default::default(),
+				infos
 			};
 			RepApprovalList::<T>::insert(acc.clone(), rep.clone());
             rep
@@ -264,23 +272,24 @@ impl<T: Config> Representative<T>
 
 //-------------------------------------------------------------------------------------
 //-------------NOTARY STRUCT DECLARATION & IMPLEMENTATION_BEGIN----------------------
-#[derive(Clone,Copy,Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Clone,Encode, Decode, Default, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Notary<T: Config> {
 	pub account_id: T::AccountId,
 	pub age: BlockNumberOf<T>,
 	pub activated: bool,
+	pub infos: BoundedVecOf<T>
 }
 impl<T: Config> Notary<T>
 /*where
 	types::Notary<T>: EncodeLike<types::Notary<T>>,*/
 {
-	pub fn new(acc: OriginFor<T>) -> Self {
+	pub fn new(acc: OriginFor<T>,infos: BoundedVecOf<T>) -> Self {
 		let caller = ensure_signed(acc).unwrap();
 		let now = <frame_system::Pallet<T>>::block_number();
 		let notary =
-			Notary { account_id: caller.clone(), age: now, activated: false};
+			Notary { account_id: caller.clone(), age: now, activated: false,infos};
 		NotaryApprovalList::<T>::mutate(|list| {
 			list.try_push(notary.clone()).map_err(|_| "Max number of requests reached").ok();
 		});

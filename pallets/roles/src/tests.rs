@@ -18,6 +18,9 @@ fn fast_forward_to(n: u64) {
 fn setting_roles(){
 	new_test_ext().execute_with(||{
 
+		let metadata0: BoundedVec<u8, <Test as Config>::MaxReasonLength>=
+			b"I love cheese".to_vec().try_into().unwrap();
+
 		assert_eq!(RolesModule::get_pending_servicers().len(), 0);
 		assert_eq!(RolesModule::get_pending_house_sellers().len(), 0);
 		assert_eq!(RolesModule::get_pending_notaries().len(), 0);
@@ -26,8 +29,8 @@ fn setting_roles(){
 
 
 		//Investor & Tenant roles
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(DAVE), DAVE, Acc::INVESTOR));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(EVE), EVE, Acc::TENANT));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(DAVE), DAVE, Acc::INVESTOR,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(EVE), EVE, Acc::TENANT,metadata0));
 		assert!(InvestorLog::<Test>::contains_key(DAVE));
 		assert!(TenantLog::<Test>::contains_key(EVE));
 

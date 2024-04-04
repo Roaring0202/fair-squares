@@ -31,6 +31,8 @@ fn bidding_roles(){
 
 		//let inv_list = vec![ALICE,DAVE,BOB,CHARLIE,EVE];
 		//let rand_list = BiddingModule::choose_investor(inv_list);
+		let metadata0: BoundedVec<u8, <Test as pallet_roles::Config>::MaxReasonLength>=
+			b"I love cheese".to_vec().try_into().unwrap();
 		assert_ok!(BiddingModule::do_something(RuntimeOrigin::signed(DAVE),0));
 		println!("selected indexes: {:?}",BiddingModule::something());
 
@@ -42,16 +44,16 @@ fn bidding_roles(){
 		assert_eq!(council.len(),3);
 
 		//Investor & Tenant roles
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(DAVE), DAVE, Acc::INVESTOR));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(EVE), EVE, Acc::TENANT));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(DAVE), DAVE, Acc::INVESTOR,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(EVE), EVE, Acc::TENANT,metadata0.clone()));
 		assert!(pallet_roles::InvestorLog::<Test>::contains_key(DAVE));
 		assert!(pallet_roles::TenantLog::<Test>::contains_key(EVE));
 
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ALICE), ALICE, Acc::INVESTOR));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE0), ACCOUNT_WITH_BALANCE0, Acc::INVESTOR));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE1), ACCOUNT_WITH_BALANCE1, Acc::INVESTOR));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE2), ACCOUNT_WITH_BALANCE2, Acc::INVESTOR));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE3), ACCOUNT_WITH_BALANCE3, Acc::INVESTOR));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ALICE), ALICE, Acc::INVESTOR,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE0), ACCOUNT_WITH_BALANCE0, Acc::INVESTOR,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE1), ACCOUNT_WITH_BALANCE1, Acc::INVESTOR,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE2), ACCOUNT_WITH_BALANCE2, Acc::INVESTOR,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(ACCOUNT_WITH_BALANCE3), ACCOUNT_WITH_BALANCE3, Acc::INVESTOR,metadata0.clone()));
 
 		assert!(pallet_roles::InvestorLog::<Test>::contains_key(ALICE));
 		assert!(pallet_roles::InvestorLog::<Test>::contains_key(ACCOUNT_WITH_BALANCE0));
@@ -60,9 +62,9 @@ fn bidding_roles(){
 		assert!(pallet_roles::InvestorLog::<Test>::contains_key(ACCOUNT_WITH_BALANCE3));
 
 		//Seller,Servicer, and Notary roles
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(BOB),BOB,Acc::SELLER));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(EVE),EVE,Acc::SERVICER));
-		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(CHARLIE),CHARLIE,Acc::NOTARY));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(BOB),BOB,Acc::SELLER,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(EVE),EVE,Acc::SERVICER,metadata0.clone()));
+		assert_ok!(RolesModule::set_role(RuntimeOrigin::signed(CHARLIE),CHARLIE,Acc::NOTARY,metadata0.clone()));
 
 		assert_eq!(RolesModule::get_pending_house_sellers().len(),1);
 		let account =RolesModule::get_pending_house_sellers()[0].account_id.clone();

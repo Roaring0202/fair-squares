@@ -49,11 +49,12 @@ pub mod pallet {
 		/// The maximum number of named reserves that can exist on an account.
 		#[pallet::constant]
 		type MaxRoles: Get<u32>+Clone;
-
 		
 		#[pallet::constant]
 		type CheckPeriod: Get<BlockNumberFor<Self>>;
 
+		#[pallet::constant]
+		type MaxReasonLength: Get<u32>;
 		
 		type BackgroundCouncilOrigin: EnsureOrigin<<Self as frame_system::Config>::RuntimeOrigin>;
 	}
@@ -206,7 +207,8 @@ pub mod pallet {
 				let servicer0 = self.new_admin.clone().unwrap(); // AccountId
 				let origin = <T as frame_system::Config>::RuntimeOrigin::from(RawOrigin::Signed(servicer0.clone())); //Origin
 				let source = T::Lookup::unlookup(servicer0); //Source
-				crate::Pallet::<T>::set_manager(origin, source).ok();
+				let infos:BoundedVec<u8,T::MaxReasonLength>=b"Dummy role".to_vec().try_into().unwrap();
+				crate::Pallet::<T>::set_manager(origin, source,infos).ok();
 			}
 		}
 	}
@@ -348,6 +350,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			account: AccountIdOf<T>,
 			account_type: Accounts,
+			infos: BoundedVecOf<T>,
 		) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 			if caller != account {
@@ -360,7 +363,7 @@ pub mod pallet {
 				Accounts::INVESTOR => {				
 					
 					ensure!(!InvestorLog::<T>::contains_key(&caller), Error::<T>::RoleAlreadyGranted);	
-					Ok(Investor::<T>::new(account.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Investor::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
@@ -378,12 +381,12 @@ pub mod pallet {
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);					
-					Ok(HouseSeller::<T>::new(account.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(HouseSeller::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
 				Accounts::TENANT => {
 					ensure!(!TenantLog::<T>::contains_key(&caller), Error::<T>::RoleAlreadyGranted);
-					Ok(Tenant::<T>::new(account.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Tenant::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
@@ -398,7 +401,7 @@ pub mod pallet {
 				Accounts::SERVICER => {
 					ensure!(!requested, <Error<T>>::AlreadyWaiting);
 					ensure!(!ServicerLog::<T>::contains_key(&caller), Error::<T>::RoleAlreadyGranted);
-					Ok(Servicer::<T>::new(account.clone())).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Servicer::<T>::new(account.clone(),infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
@@ -414,7 +417,7 @@ pub mod pallet {
 					let notary = <T as frame_system::Config>::RuntimeOrigin::from(RawOrigin::Signed(
 						account.clone(),
 					));
-					Ok(Notary::<T>::new(notary)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
+					Ok(Notary::<T>::new(notary,infos)).map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
 				Accounts::REPRESENTATIVE => {
@@ -424,7 +427,7 @@ pub mod pallet {
 					let val0 = Self::get_roles(&account);
 					let size = <T as Config>::MaxRoles::get() as usize;
 					ensure!(val0.len() < size, Error::<T>::MaximumRolesExceeded);
-					Ok(Representative::<T>::new(account.clone()))
+					Ok(Representative::<T>::new(account.clone(),infos))
 						.map_err(|_:Error<T>| <Error<T>>::InitializationError)?;
 					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
@@ -519,6 +522,7 @@ pub mod pallet {
 		pub fn set_manager(
 			origin: OriginFor<T>,
 			new: <T::Lookup as StaticLookup>::Source,
+			infos: BoundedVecOf<T>
 		) -> DispatchResult {
 			let sender = ensure_signed(origin.clone())?;
 			let new0 = T::Lookup::lookup(new.clone())?;
@@ -535,7 +539,7 @@ pub mod pallet {
 			//create Servicer & approve a servicer account for new Sudo
 			//if the new Sudo has no role yet
 			if !AccountsRolesLog::<T>::contains_key(&new0) {
-				Servicer::<T>::new(new0.clone());
+				Servicer::<T>::new(new0.clone(),infos);
 				Self::approve_account(new0).ok();
 			}
 			SUDO::Pallet::<T>::set_key(origin, new).ok();

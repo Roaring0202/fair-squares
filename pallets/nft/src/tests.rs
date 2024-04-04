@@ -17,9 +17,10 @@ macro_rules! bvec {
 #[test]
 fn mint_works() {
 	new_test_ext().execute_with(|| {
-		
+		let metadata0: BoundedVec<u8, <Test as pallet_roles::Config>::MaxReasonLength>=
+			b"Richard Geere".to_vec().try_into().unwrap();
 		//prep_roles();
-		RolesModule::set_role(RuntimeOrigin::signed(CHARLIE), CHARLIE, Acc::INVESTOR).ok();
+		RolesModule::set_role(RuntimeOrigin::signed(CHARLIE), CHARLIE, Acc::INVESTOR,metadata0).ok();
 
 		assert_ok!(NFTPallet::create_collection(
 			RuntimeOrigin::signed(CHARLIE),
