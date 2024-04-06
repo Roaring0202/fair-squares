@@ -2578,10 +2578,10 @@
     "@svgr/plugin-svgo" "^5.5.0"
     loader-utils "^2.0.0"
 
-"@tailwindcss/forms@^0.5.4":
-  version "0.5.4"
-  resolved "https://registry.npmjs.org/@tailwindcss/forms/-/forms-0.5.4.tgz"
-  integrity sha512-YAm12D3R7/9Mh4jFbYSMnsd6jG++8KxogWgqs7hbdo/86aWjjlIEvL7+QYdVELmAI0InXTpZqFIg5e7aDVWI2Q==
+"@tailwindcss/forms@^0.5.7":
+  version "0.5.7"
+  resolved "https://registry.npmjs.org/@tailwindcss/forms/-/forms-0.5.7.tgz"
+  integrity sha512-QE7X69iQI+ZXwldE+rzasvbJiyV/ju1FGHH0Qn2W3FKbuYtqp8LKcy6iSw79fVUT5/Vvf+0XgLCeYVG+UV6hOw==
   dependencies:
     mini-svg-data-uri "^1.2.3"
 
@@ -9102,10 +9102,10 @@ react-error-overlay@^6.0.11:
   resolved "https://registry.npmjs.org/react-error-overlay/-/react-error-overlay-6.0.11.tgz"
   integrity sha512-/6UZ2qgEyH2aqzYZgQPxEnz33NJ2gNsnHA2o5+o4wW9bLM/JYQitNP9xPhsXwC08hMMovfGe/8retsdDsczPRg==
 
-react-hook-form@^7.45.2:
-  version "7.45.2"
-  resolved "https://registry.npmjs.org/react-hook-form/-/react-hook-form-7.45.2.tgz"
-  integrity sha512-9s45OdTaKN+4NSTbXVqeDITd/nwIg++nxJGL8+OD5uf1DxvhsXQ641kaYHk5K28cpIOTYm71O/fYk7rFaygb3A==
+react-hook-form@^7.51.2:
+  version "7.51.2"
+  resolved "https://registry.npmjs.org/react-hook-form/-/react-hook-form-7.51.2.tgz"
+  integrity sha512-y++lwaWjtzDt/XNnyGDQy6goHskFualmDlf+jzEZvjvz6KWDf7EboL7pUvRCzPTJd0EOPpdekYaQLEvvG6m6HA==
 
 react-hot-toast@^2.4.1:
   version "2.4.1"

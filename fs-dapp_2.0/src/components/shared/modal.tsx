@@ -6,6 +6,7 @@ import { ROLES } from '../../contexts/types';
 import { web3FromAddress } from '@polkadot/extension-dapp';
 import { Toast } from 'flowbite-react';
 import { NotificationTwoTone, WarningTwoTone } from '@ant-design/icons';
+import { DetailsPage } from './InfosForm';
 
 const RolesApp: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -13,7 +14,8 @@ const RolesApp: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [warning, setWarning] = useState(false);
   const { api, selectedAccount } = useAppContext();
-  const { role,infos } = useAccountContext();
+  const { role,infos,dispatch0 } = useAccountContext();
+  const [acbutton,setAcbutton] = useState<boolean>(true);
 
   const showDrawer = () => {
     setOpen(true);
@@ -28,6 +30,8 @@ const RolesApp: React.FC = () => {
       console.log('No Roles possible!');
     } else {
       let who = selectedAccount.address;
+      console.log(`User infos: ${infos}`)
+      let enc= new TextEncoder()
       const tx = await api.tx.rolesModule.setRole(who, ROLES[num].toString(),infos);
       const fees = await tx.paymentInfo(who);
       const injector = await web3FromAddress(who);
@@ -65,17 +69,25 @@ const RolesApp: React.FC = () => {
 
   useEffect(() => {
     if (event !== 'No Roles') console.log(event);
-  }, [event]);
+    if (infos!=="No Information Provided"){
+      let all= infos.split(`:`)
+      console.log(all[1]);
+      setAcbutton(false)
+      console.log(infos)
+    }
+  }, [event,infos,dispatch0]);
 
   return (
     <p className="flex-col space-y-2">
-      <Button
+      <Button 
+        disabled={acbutton}
         type="primary"
         className="bg-blue-600 text-white font-bold py-2 pb-10 text-xl"
         onClick={showDrawer}
       >
         Select a Role
       </Button>
+      <DetailsPage/>
       {!(showToast === false) ? (
         <Toast>
           <div

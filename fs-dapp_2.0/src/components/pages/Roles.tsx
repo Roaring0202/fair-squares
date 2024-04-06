@@ -31,7 +31,7 @@ export default function Roles() {
       }
       
     });
-    console.log(`role in session:${role_in_session}`)
+    //console.log(`role in session:${role_in_session}`)
   }, [role_in_session,selectedAccount, blocks, dispatch1, api]);
 
   useEffect(() => {

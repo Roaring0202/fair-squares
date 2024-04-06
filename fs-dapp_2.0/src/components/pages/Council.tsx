@@ -20,7 +20,7 @@ export default function Council() {
   const { role, balance, dispatch0 } = useAccountContext();
   const { session_closed,approved,role_in_session,nay,ayes,council_members,selectedProposal,proposals, datas,dispatch1 } = useConcilSessionContext();
   
-  const[infos,setInfos]=useState('')
+    
   const getproposal= (item:MouseEvent)=>{
     
     let txt=item.currentTarget.textContent
@@ -41,6 +41,7 @@ export default function Council() {
       console.log(council_members);
     }   
   }
+  
 
    function getDatas(){
     let tdata:DataType[]=[];
@@ -61,7 +62,8 @@ export default function Council() {
       let status = Prop.approved.toString();
       let referendum = Prop.sessionClosed.toString();
       let hash = Prop.proposalHash.toString();
-      let infos='Nothing yet';
+      let infos = Prop.infos.toString();      
+      console.log(Prop.infos.split(`:`)[1])
 
       api.query.backgroundCouncil.voting(hash,(data:any)=>{
         let data1 = data.toHuman();
@@ -72,8 +74,9 @@ export default function Council() {
             dispatch1({ type: 'SET_NAY', payload: no });
           }
       })
+      
       let dtype:DataType={name:acc1.meta.name,role:r_session,address: Prop.accountId,status,referendum,hash,infos};      
-      let prop0:Proposal={voter_id:selectedAccount,Referendum_account:acc1,session_closed:referendum,approved:status,ayes,nay,hash}
+      let prop0:Proposal={voter_id:selectedAccount,Referendum_account:acc1,session_closed:referendum,approved:status,ayes,nay,hash,infos}
       props.push(prop0);
       tdata.push(dtype);      
               }
@@ -112,14 +115,14 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
   }, [selectedAccount,blocks]);
 
  
-const style1= { width: 410, height:150, background:`white`};
-const style2= { width: 410, height:150, background:`red`};
-const style3= { width: 410, height:150, background:`green`};
+const style1= { width: 410, height:400, background:`white`};
+const style2= { width: 410, height:400, background:`red`};
+const style3= { width: 410, height:400, background:`green`};
   return((selectedAccount && council_members.includes(selectedAccount))?
   
   <div id="scrollableDiv"
   style={{
-    height: 400,
+    height: 600,
     overflow: 'auto',
     padding: '0 16px',
     border: '1px solid rgba(140, 140, 140, 0.35)',
@@ -132,6 +135,7 @@ const style3= { width: 410, height:150, background:`green`};
             <Card 
             onClick={getproposal}
             hoverable
+            cover={<img alt="example" style={{height:"50%", width:"50%"}} src={item.infos.split(`:`)[1]}/>}
       style={(item.status==="AWAITING" && item.referendum==="false")?style1:
              ((item.status==="AWAITING" && item.referendum==="true")?style2:style3)}>
             <List.Item key={item.address}>

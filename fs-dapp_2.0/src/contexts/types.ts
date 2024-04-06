@@ -49,6 +49,7 @@ export interface Proposal{
   ayes: number;
   nay: number;
   hash:string;
+  infos:string;
 }
 export interface DataType {
   name: string|undefined;
