@@ -31,7 +31,6 @@ const RolesApp: React.FC = () => {
     } else {
       let who = selectedAccount.address;
       console.log(`User infos: ${infos}`)
-      let enc= new TextEncoder()
       const tx = await api.tx.rolesModule.setRole(who, ROLES[num].toString(),infos);
       const fees = await tx.paymentInfo(who);
       const injector = await web3FromAddress(who);
@@ -74,8 +73,13 @@ const RolesApp: React.FC = () => {
       console.log(all[1]);
       setAcbutton(false)
       console.log(infos)
-    }
+    }else{setAcbutton(true)}
   }, [event,infos,dispatch0]);
+
+  useEffect(()=>{
+
+    dispatch0({type:`SET_INFOS`,payload:"No Information Provided"});
+  },[selectedAccount])
 
   return (
     <p className="flex-col space-y-2">

@@ -22,17 +22,41 @@ export default function Roles() {
     api.query.rolesModule.requestedRoles(address0, (data: any) => {
       let data0 = data.toHuman();
       if(data0) {
-        console.log(`requested roles:${data}`);
+        //console.log(`requested roles:${data}`);
       let r_session = data0.role.toString();
 
       dispatch1({ type: 'SET_ROLE_IN_SESSION', payload: r_session });
       }else{
         dispatch1({ type: 'SET_ROLE_IN_SESSION', payload: `` });
       }
+
+      api.query.backgroundCouncil.proposals((hash: string[]) => {
+        
+        if (hash.length > 0) {
+          hash.forEach((x)=>{
+            if(x.toString()===data0.proposalHash.toString()){
+              
+              api.query.backgroundCouncil.voting(x.toString(), (data: any) => {
+                let data1 = data.toHuman();
+                if (data1 !== null) {
+                  let yes = data1.ayes.length;
+                  let no = data1.nays.length;
+                  dispatch1({ type: 'SET_AYES', payload: yes });
+                  dispatch1({ type: 'SET_NAY', payload: no });
+                }
+              });
+            }
+          })
+          
+        }
+      });
       
     });
     //console.log(`role in session:${role_in_session}`)
   }, [role_in_session,selectedAccount, blocks, dispatch1, api]);
+
+
+
 
   useEffect(() => {
     if (!api || !selectedAccount) return;
@@ -63,21 +87,7 @@ export default function Roles() {
         }
       })();
     }*/
-    api.query.backgroundCouncil.proposals((hash: string[]) => {
-      if (hash.length > 0) {
-        let hash0 = hash[0];
-
-        api.query.backgroundCouncil.voting(hash0, (data: any) => {
-          let data1 = data.toHuman();
-          if (data1 !== null) {
-            let yes = data1.ayes.length;
-            let no = data1.nays.length;
-            dispatch1({ type: 'SET_AYES', payload: yes });
-            dispatch1({ type: 'SET_NAY', payload: no });
-          }
-        });
-      }
-    });
+    
   }, [blocks,selectedAccount, api, dispatch0, dispatch1, dispatch]);
 
   return (

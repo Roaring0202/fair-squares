@@ -12,7 +12,7 @@ import { Card, Col, Space } from 'antd';
 import Identicon from '@polkadot/react-identicon';
 import InfiniteScroll from "react-infinite-scroll-component";
 import { Avatar,  Divider, List, Skeleton } from "antd";
-import { Button } from 'flowbite-react';
+import { Button } from 'antd';
 
 
 export default function Council() {
@@ -37,8 +37,8 @@ export default function Council() {
 
     });
     if(selectedProposal){
-      console.log(selectedAccount);
-      console.log(council_members);
+      console.log(selectedProposal.infos);
+      //console.log(council_members);
     }   
   }
   
@@ -63,17 +63,8 @@ export default function Council() {
       let referendum = Prop.sessionClosed.toString();
       let hash = Prop.proposalHash.toString();
       let infos = Prop.infos.toString();      
-      console.log(Prop.infos.split(`:`)[1])
 
-      api.query.backgroundCouncil.voting(hash,(data:any)=>{
-        let data1 = data.toHuman();
-          if (data1 !== null) {
-            let yes = data1.ayes.length;
-            let no = data1.nays.length;
-            dispatch1({ type: 'SET_AYES', payload: yes });
-            dispatch1({ type: 'SET_NAY', payload: no });
-          }
-      })
+      
       
       let dtype:DataType={name:acc1.meta.name,role:r_session,address: Prop.accountId,status,referendum,hash,infos};      
       let prop0:Proposal={voter_id:selectedAccount,Referendum_account:acc1,session_closed:referendum,approved:status,ayes,nay,hash,infos}
@@ -118,24 +109,32 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
 const style1= { width: 410, height:400, background:`white`};
 const style2= { width: 410, height:400, background:`red`};
 const style3= { width: 410, height:400, background:`green`};
-  return((selectedAccount && council_members.includes(selectedAccount))?
-  
-  <div id="scrollableDiv"
+if(!selectedAccount||!council_members.includes(selectedAccount)){
+  return(
+    <div>
+    You Are not a Council Member
+  </div>
+  )
+}
+
+  return(
+  <div className="flex flex-row justify-between p-6">
+
+<div id="scrollableDiv"
   style={{
     height: 600,
     overflow: 'auto',
     padding: '0 16px',
-    border: '1px solid rgba(140, 140, 140, 0.35)',
+   // border: '1px solid rgba(140, 140, 140, 0.35)',
   }}>
     
        <List
-          dataSource={datas}
-          
+          dataSource={datas}          
           renderItem={item => (
             <Card 
             onClick={getproposal}
             hoverable
-            cover={<img alt="example" style={{height:"50%", width:"50%"}} src={item.infos.split(`:`)[1]}/>}
+            cover={<img alt="example" style={{height:"30%", width:"30%"}} src={item.infos.split(`:`)[1]}/>}
       style={(item.status==="AWAITING" && item.referendum==="false")?style1:
              ((item.status==="AWAITING" && item.referendum==="true")?style2:style3)}>
             <List.Item key={item.address}>
@@ -147,12 +146,21 @@ const style3= { width: 410, height:400, background:`green`};
             </Card>
           )}
 
-        />
+        /> 
 
-   
-    
-  </div>:<div>
-    You Are not a Council Member
-  </div>);
+          
+  </div>
+  <div >
+  
+          <Button type="primary" className="bg-blue-600 text-white font-bold py-2 pb-10  text-xl">AYES</Button>
+          <Button type="primary" className="bg-red-600 text-white font-bold py-2 pb-10   text-xl">NAY</Button>
+          <p>{selectedProposal?.infos}</p>
+        
+  </div>
+  
+
+  </div>
+  
+  );
 
   }
