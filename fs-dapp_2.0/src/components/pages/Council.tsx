@@ -4,6 +4,10 @@ import React, { useEffect,MouseEvent,useState,useCallback } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useConcilSessionContext } from '../../contexts/CouncilSessionContext';
 import { DataType, Proposal } from '@/src/contexts/types';
+import { web3FromAddress } from '@polkadot/extension-dapp';
+import { Toast } from 'flowbite-react';
+import { NotificationTwoTone, WarningTwoTone } from '@ant-design/icons';
+
 import BN from 'bn.js';
 import { toUnit } from '../shared/utils';
 import RolesApp from '../shared/modal';
@@ -19,7 +23,13 @@ export default function Council() {
   const { api, blocks, selectedAccount,accounts,  dispatch } = useAppContext();
   const { role, balance, dispatch0 } = useAccountContext();
   const { session_closed,approved,role_in_session,nay,ayes,council_members,selectedProposal,proposals, datas,dispatch1 } = useConcilSessionContext();
-  
+  const [out,setOut]= useState<string[]>();
+  const [voted,setVoted]= useState(false);
+  const [event, setEvents] = useState('No Vote');
+  const [showToast, setShowToast] = useState(false);
+  const [warning, setWarning] = useState(false);
+  const [treshold,setTres] = useState(0);
+  const initprop:Proposal={voter_id:undefined,Referendum_account:undefined,session_closed:false,approved:false,ayes:0,nay:0,hash:"",infos:""}
     
   const getproposal= (item:MouseEvent)=>{
     
@@ -37,18 +47,87 @@ export default function Council() {
 
     });
     if(selectedProposal){
-      console.log(selectedProposal.infos);
+      //console.log(selectedProposal.infos);
       //console.log(council_members);
     }   
   }
-  
+  const handleClick= async (vote:boolean)=>{
+    
+    if (!api||!selectedAccount||!selectedProposal) return;
+    let who = selectedAccount.address;
+    let prop = selectedProposal.Referendum_account?.address
+    if(!prop) return;
+    console.log(`The address exist: ${prop}`)
+    const tx = await api.tx.rolesModule.councilVote(prop,vote)
+    const fees = await tx.paymentInfo(who);
+      const injector = await web3FromAddress(who);
+      tx.signAndSend(who, { signer: injector.signer }, ({ status, events, dispatchError }) => {
+        if (dispatchError && status.isInBlock) {
+          if (dispatchError.isModule) {
+            console.log(`Current status: ${status.type}`);
+            // for module errors, we have the section indexed, lookup
+            const decoded = api.registry.findMetaError(dispatchError.asModule);
+            const { docs, name, section } = decoded;
+            setEvents(name.toString());
+            setShowToast(true);
+            setWarning(true);
+
+          //  console.log(`${section}.${name}: ${docs.join(' ')}`);
+          }
+        } else if (status.isInBlock) {
+         // console.log(`Fees: ${fees.partialFee}`);
+         // console.log(`Current status: ${status.type}`);
+          events.forEach(({ event: { method, section, data } }) => {
+            if (section.toString().includes('rolesModule')) {
+              let meth = method.toString() + '\n';
+              let payed = '\n' + fees.partialFee.toString() + ' FS';
+              setEvents(`${meth} =>Paid fees: ${payed} `);
+              setShowToast(true);
+              setWarning(false);
+            }
+          });
+        } else {
+         // console.log(`Current status: ${status.type}`);
+        }
+      });
+  }
+
+  function checkVote(){
+    if (!api||!selectedAccount) return;
+    api.query.backgroundCouncil.voting.entries((all:any[])=>{
+      all.forEach(([key,value])=>{
+        let inf=value.toHuman();
+        let yes:string[] = inf.ayes;
+        let no:string[] = inf.nays;
+        
+        if (yes.includes(selectedAccount.address)||no.includes(selectedAccount.address)){
+          let tres = yes.length+no.length
+        setTres(tres);
+          console.log("it works")
+          setVoted(true)
+        }else{
+          setVoted(false);
+          setTres(0)
+        }
+        
+      })
+    })
+  }
+  function arrangeText(){
+    if(!selectedProposal) return([""]);
+    let alltxt=selectedProposal.infos.split(":");
+    let output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}
+    `
+    let output0= output00.split(";")
+    return output0
+  }
 
    function getDatas(){
+    if (!api||!selectedAccount) return;
     let tdata:DataType[]=[];
     let props:Proposal[]=[];
     
-    api?.query.rolesModule.requestedRoles.entries((all:any[])=>{
-      if (!selectedAccount) return;      
+    api.query.rolesModule.requestedRoles.entries((all:any[])=>{     
      // if (!council_members.includes(selectedAccount)) return;
        all.forEach(([key, value]) => {
         let Prop = value.toHuman();
@@ -100,10 +179,21 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
       dispatch1({ type: 'SET_COUNCIL_MEMBERS', payload: members });
     });
     
-    getDatas();    
+    getDatas();
+    let txt = arrangeText();
+    setOut(txt)   
+    checkVote()
+    let prop_hashes= proposals.map((x)=>
+      x.hash
+    )
     
+    if(selectedProposal && !prop_hashes.includes(selectedProposal.hash)){
+      
+      dispatch1({type:`SET_SELECTED_PROPOSAL`,payload:initprop});
+      setVoted(false)
+    }
     //console.log(`Datas length after:${datas.length}`)
-  }, [selectedAccount,blocks]);
+  }, [api,selectedAccount,blocks]);
 
  
 const style1= { width: 410, height:400, background:`white`};
@@ -152,12 +242,48 @@ if(!selectedAccount||!council_members.includes(selectedAccount)){
   </div>
   <div >
   
-          <Button type="primary" className="bg-blue-600 text-white font-bold py-2 pb-10  text-xl">AYES</Button>
-          <Button type="primary" className="bg-red-600 text-white font-bold py-2 pb-10   text-xl">NAY</Button>
-          <p>{selectedProposal?.infos}</p>
-        
+          <Button onClick={()=>{handleClick(true);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-blue-600 text-white font-bold py-2 pb-10  text-xl">AYES</Button>
+          <Button onClick={()=>{handleClick(false);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-red-600 text-white font-bold py-2 pb-10   text-xl">NAY</Button>
+          <Button  disabled={(treshold>1)?false:true} type="primary" className="bg-black-600 text-white font-bold py-2 pb-10   text-xl">CLOSE</Button>
+          
+          <Card title={"User Information"} style={style1}>
+    {out?out.map((x)=>(
+      <div ><p className=' font-semibold'>{x.split(":")[0]}:</p> {x.split(":")[1]}</div>
+    )):""}
+    <p className=' font-semibold'>Voted:</p>
+    {voted?"You voted!":"Not Yet!"}
+  </Card>
+  <p>
+  {!(showToast === false) ? (
+        <Toast>
+          <div
+            className={
+              'shadow-md rounded-md flex  text-white text-base items-center justify-normal ' +
+              (warning === true ? ' bg-red-500 animate-bounce ' : ' bg-green-600  animate-pulse')
+            }
+          >
+            <div>
+              {!(warning === true) ? (
+                <NotificationTwoTone twoToneColor="#52c41a" className="h-8 w-8" />
+              ) : (
+                <WarningTwoTone twoToneColor="#eb2f96" className="h-8 w-8" />
+              )}
+            </div>
+            <div className="p-2">{event}</div>
+            <Toast.Toggle
+              onClick={() => {
+                setShowToast(false);
+              }}
+            />
+          </div>
+        </Toast>
+      ) : (
+        <div className=" p-2"> </div>
+      )}
+  </p>
   </div>
-  
+ 
+ 
 
   </div>
   
