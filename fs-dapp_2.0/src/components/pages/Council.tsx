@@ -29,6 +29,7 @@ export default function Council() {
   const [showToast, setShowToast] = useState(false);
   const [warning, setWarning] = useState(false);
   const [treshold,setTres] = useState(0);
+  const [close,setClose] = useState(true);
   const initprop:Proposal={voter_id:undefined,Referendum_account:undefined,session_closed:false,approved:false,ayes:0,nay:0,hash:"",infos:""}
     
   const getproposal= (item:MouseEvent)=>{
@@ -51,14 +52,23 @@ export default function Council() {
       //console.log(council_members);
     }   
   }
+  const handleClose=async()=>{
+    if (!api||!selectedAccount||!selectedProposal) return;
+    let who = selectedAccount.address;
+    let prop = selectedProposal.Referendum_account?.address
+    if(!prop) return;
+    const tx = await api.tx.rolesModule.councilClose(prop)
+    const injector = await web3FromAddress(who);
+    tx.signAndSend(who,{signer:injector.signer});
+    setClose(false)
+  }
   const handleClick= async (vote:boolean)=>{
     
     if (!api||!selectedAccount||!selectedProposal) return;
     let who = selectedAccount.address;
     let prop = selectedProposal.Referendum_account?.address
     if(!prop) return;
-    console.log(`The address exist: ${prop}`)
-    const tx = await api.tx.rolesModule.councilVote(prop,vote)
+    const tx = await api.tx.rolesModule.councilVote(prop,vote);
     const fees = await tx.paymentInfo(who);
       const injector = await web3FromAddress(who);
       tx.signAndSend(who, { signer: injector.signer }, ({ status, events, dispatchError }) => {
@@ -90,6 +100,7 @@ export default function Council() {
          // console.log(`Current status: ${status.type}`);
         }
       });
+      setVoted(true)
   }
 
   function checkVote(){
@@ -166,6 +177,7 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
       
       let members:InjectedAccountWithMeta[]=[];
       
+      
       who.forEach((x)=>{
         let y=x.toHuman();
         accounts.forEach((ac)=>{
@@ -183,15 +195,13 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
     let txt = arrangeText();
     setOut(txt)   
     checkVote()
-    let prop_hashes= proposals.map((x)=>
-      x.hash
-    )
     
-    if(selectedProposal && !prop_hashes.includes(selectedProposal.hash)){
-      
+    console.log(`available datas: ${datas}`)
+    if (datas.toString()===""){
       dispatch1({type:`SET_SELECTED_PROPOSAL`,payload:initprop});
       setVoted(false)
     }
+  
     //console.log(`Datas length after:${datas.length}`)
   }, [api,selectedAccount,blocks]);
 
@@ -244,7 +254,7 @@ if(!selectedAccount||!council_members.includes(selectedAccount)){
   
           <Button onClick={()=>{handleClick(true);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-blue-600 text-white font-bold py-2 pb-10  text-xl">AYES</Button>
           <Button onClick={()=>{handleClick(false);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-red-600 text-white font-bold py-2 pb-10   text-xl">NAY</Button>
-          <Button  disabled={(treshold>1)?false:true} type="primary" className="bg-black-600 text-white font-bold py-2 pb-10   text-xl">CLOSE</Button>
+          <Button onClick={()=>{handleClose();}} disabled={(!close||treshold<2)?true:false} type="primary" className="bg-green-800 text-white font-bold py-2 pb-10   text-xl">CLOSE</Button>
           
           <Card title={"User Information"} style={style1}>
     {out?out.map((x)=>(

@@ -44,7 +44,16 @@ export function DetailsPage(){
             <form noValidate onSubmit={handleSubmit(onSubmit)}>
                 <div className={fieldstyle}>
                     <label htmlFor='picture'>Link to Avatar Picture</label>
-                    <input type='text' id="picture" {...register('picture')}/>
+
+                    <select 
+                    id="picture" 
+                    {...register('picture')}>
+                    <option value= "../../../johndoe.png">John DOE</option>
+                    <option value= "../../../INVESTOR.png">INVESTOR</option>
+                    <option value= "../../../SELLER.png">SELLER</option>
+                    <option value= "../../../SERVICER.png">SERVICER</option>
+                    <option value= "../../../TENANT.png">TENANT</option>
+                    </select>
                 </div>
                 <div className={fieldstyle}>
                     <label htmlFor='fullname' >Full Name</label>
@@ -54,7 +63,7 @@ export function DetailsPage(){
                 </div>
                 <div className={fieldstyle}>
                     <label htmlFor='email'>e-mail address</label>
-                    <input type='text' id ="email" className={getEditorStyle(errors.email)}{...register('email',{
+                    <input type='email' id ="email" className={getEditorStyle(errors.email)}{...register('email',{
                         required:`You must enter your e-mail address`
                     })}/>
                 </div>
