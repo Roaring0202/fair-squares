@@ -16,7 +16,7 @@ import { Card, Col, Space } from 'antd';
 import Identicon from '@polkadot/react-identicon';
 import InfiniteScroll from "react-infinite-scroll-component";
 import { Avatar,  Divider, List, Skeleton } from "antd";
-import { Button } from 'antd';
+import { Button  } from 'antd';
 
 
 export default function Council() {
@@ -41,10 +41,10 @@ export default function Council() {
       if (!acc1) return;
       let name= acc1.address
       if (!name||!txt) return;
-      if(txt.includes(name)){
+      if(txt.includes(name.slice(0,6)+'...'+name.slice(-6,-1))){
         dispatch1({type:`SET_SELECTED_PROPOSAL`,payload:prop});
       }
-      
+      console.log(prop.infos)
 
     });
     if(selectedProposal){
@@ -206,9 +206,10 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
   }, [api,selectedAccount,blocks]);
 
  
-const style1= { width: 410, height:400, background:`white`};
-const style2= { width: 410, height:400, background:`red`};
-const style3= { width: 410, height:400, background:`green`};
+const style1= { width: 310, height:250, background:`white`};
+const style2= { width: 310, height:250, background:`#ffccc7`};
+const style3= { width: 310, height:250, background:`#f4ffb8`};
+const style4= { width: 410, height:400, background:`white`};
 if(!selectedAccount||!council_members.includes(selectedAccount)){
   return(
     <div>
@@ -239,7 +240,7 @@ if(!selectedAccount||!council_members.includes(selectedAccount)){
              ((item.status==="AWAITING" && item.referendum==="true")?style2:style3)}>
             <List.Item key={item.address}>
               <List.Item.Meta
-                title={<p>{item.address}</p>}
+                title={<p>{item.address.slice(0,6)+'...'+item.address.slice(-6,-1)}</p>}
                 description={<div><p>Requested Role: {item.role}</p><p>Request Status: {item.status}</p><p>Session is closed: {item.referendum}</p></div>}
               />
             </List.Item>
@@ -251,18 +252,19 @@ if(!selectedAccount||!council_members.includes(selectedAccount)){
           
   </div>
   <div >
-  
+  <p className=' flex gap-3'>
           <Button onClick={()=>{handleClick(true);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-blue-600 text-white font-bold py-2 pb-10  text-xl">AYES</Button>
           <Button onClick={()=>{handleClick(false);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-red-600 text-white font-bold py-2 pb-10   text-xl">NAY</Button>
           <Button onClick={()=>{handleClose();}} disabled={(!close||treshold<2)?true:false} type="primary" className="bg-green-800 text-white font-bold py-2 pb-10   text-xl">CLOSE</Button>
-          
-          <Card title={"User Information"} style={style1}>
+            
+          <Card title={"User Information"} style={style4}>
     {out?out.map((x)=>(
       <div ><p className=' font-semibold'>{x.split(":")[0]}:</p> {x.split(":")[1]}</div>
     )):""}
     <p className=' font-semibold'>Voted:</p>
     {voted?"You voted!":"Not Yet!"}
   </Card>
+  </p> 
   <p>
   {!(showToast === false) ? (
         <Toast>
