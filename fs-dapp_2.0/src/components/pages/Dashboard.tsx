@@ -6,6 +6,7 @@ import { Pie } from 'react-chartjs-2';
 import BN from 'bn.js';
 import { toUnit } from '../shared/utils';
 import { NavLink } from 'react-router-dom';
+import { all } from 'axios';
 ChartJS.register(ArcElement, Tooltip, Legend);
 const treasury_address = '5EYCAe5h8JVpdkpBnytXdq1R8u69C3a7zi7iuipxUc8NVHqh';
 
@@ -26,42 +27,63 @@ export default function Dashboard() {
   } = useAppContext();
   const { role } = useAccountContext();
 
-  useEffect(() => {
+  useEffect(()=>{
     if (!api) return;
+
+    api.query.rolesModule.sellerApprovalList((data: any) => {
+      dispatch({ type: 'SET_A_SELLERS_NBR', payload: data.length });
+    });
+
+
+    api.query.rolesModule.servicerApprovalList((data: any) => {
+      dispatch({ type: 'SET_A_SERVICER_NBR', payload: data.length });
+    });
 
     api.query.system.account(treasury_address, ({ data: free }: { data: { free: BN } }) => {
       let { free: balance1 } = free;
       dispatch({ type: 'SET_TREASURY_BALANCE', payload: balance1 });
     });
 
-    api.query.rolesModule.investorLog.entries((data: any) => {
-      dispatch({ type: 'SET_INVESTORS_NBR', payload: data.length });
-    });
-    api.query.rolesModule.tenantLog.entries((data: any) => {
-      dispatch({ type: 'SET_TENANTS_NBR', payload: data.length });
-    });
-
-    api.query.rolesModule.sellerApprovalList((data: any) => {
-      dispatch({ type: 'SET_A_SELLERS_NBR', payload: data.length });
+    
+    api.query.rolesModule.investorLog.entries((data: any[]) => {
+        
+        let keys= Object.keys(data)
+        let num:number=keys.length
+      dispatch({ type: 'SET_INVESTORS_NBR', payload: num });
+      
     });
 
-    api.query.rolesModule.houseSellerLog.entries((data: []) => {
-      dispatch({ type: 'SET_SELLERS_NBR', payload: data.length });
+    api.query.rolesModule.tenantLog.entries((data: any[]) => {
+        let keys= Object.keys(data)
+        let num:number=keys.length
+      dispatch({ type: 'SET_TENANTS_NBR', payload: num });
+      
+    });
+  
+    api.query.rolesModule.servicerLog.entries((data: any[]) => {
+        let keys= Object.keys(data)
+        let num:number=keys.length
+        dispatch({ type: 'SET_SERVICER_NBR', payload: num });
+      
+      
     });
 
-    api.query.rolesModule.servicerApprovalList((data: any) => {
-      dispatch({ type: 'SET_A_SERVICER_NBR', payload: data.length });
-    });
-
-    api.query.rolesModule.servicerLog.entries((data: any) => {
-      dispatch({ type: 'SET_SERVICER_NBR', payload: data.length });
+    api.query.rolesModule.houseSellerLog.entries((data: any[]) => {
+        let keys= Object.keys(data)
+        let num:number=keys.length
+      dispatch({ type: 'SET_SELLERS_NBR', payload: num });
+      
     });
 
     api.query.rolesModule.totalMembers((data: number) => {
       let data1 = Number(data.toString());
       dispatch({ type: 'SET_TOTAL', payload: data1 });
     });
-  }, [blocks, api, dispatch]);
+
+
+  },[api,blocks,dispatch])
+
+ 
 
   const maxRoles = Number(api?.consts.rolesModule.maxRoles);
 

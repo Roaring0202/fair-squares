@@ -60,7 +60,7 @@ export default function Council() {
     const tx = await api.tx.rolesModule.councilClose(prop)
     const injector = await web3FromAddress(who);
     tx.signAndSend(who,{signer:injector.signer});
-    setClose(false)
+    setClose(true)
   }
   const handleClick= async (vote:boolean)=>{
     
@@ -114,7 +114,7 @@ export default function Council() {
         if (yes.includes(selectedAccount.address)||no.includes(selectedAccount.address)){
           let tres = yes.length+no.length
         setTres(tres);
-          console.log("it works")
+          console.log(`it works:${treshold}`)
           setVoted(true)
         }else{
           setVoted(false);
@@ -201,9 +201,10 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
       dispatch1({type:`SET_SELECTED_PROPOSAL`,payload:initprop});
       setVoted(false)
     }
-  
+
+    if(treshold<2){setClose(true)}else{setClose(false)};  
     //console.log(`Datas length after:${datas.length}`)
-  }, [api,selectedAccount,blocks]);
+  }, [api,selectedAccount,blocks,treshold,dispatch1]);
 
  
 const style1= { width: 310, height:250, background:`white`};
@@ -253,9 +254,12 @@ if(!selectedAccount||!council_members.includes(selectedAccount)){
   </div>
   <div >
   <p className=' flex gap-3'>
-          <Button onClick={()=>{handleClick(true);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-blue-600 text-white font-bold py-2 pb-10  text-xl">AYES</Button>
-          <Button onClick={()=>{handleClick(false);}} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-red-600 text-white font-bold py-2 pb-10   text-xl">NAY</Button>
-          <Button onClick={()=>{handleClose();}} disabled={(!close||treshold<2)?true:false} type="primary" className="bg-green-800 text-white font-bold py-2 pb-10   text-xl">CLOSE</Button>
+          <Button onClick={()=>{handleClick(true);
+            
+          }} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-blue-600 text-white font-bold py-2 pb-10  text-xl">AYES</Button>
+          <Button onClick={()=>{handleClick(false);
+          }} disabled={voted || selectedProposal?.infos===""} type="primary" className="bg-red-600 text-white font-bold py-2 pb-10   text-xl">NAY</Button>
+          <Button onClick={()=>{handleClose();}} disabled={close} type="primary" className="bg-green-800 text-white font-bold py-2 pb-10   text-xl">CLOSE</Button>
             
           <Card title={"User Information"} style={style4}>
     {out?out.map((x)=>(
