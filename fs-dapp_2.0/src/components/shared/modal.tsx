@@ -7,6 +7,7 @@ import { web3FromAddress } from '@polkadot/extension-dapp';
 import { Toast } from 'flowbite-react';
 import { NotificationTwoTone, WarningTwoTone } from '@ant-design/icons';
 import { DetailsPage } from './InfosForm';
+import {BN,formatBalance} from '@polkadot/util';
 
 const RolesApp: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -48,12 +49,13 @@ const RolesApp: React.FC = () => {
             console.log(`${section}.${name}: ${docs.join(' ')}`);
           }
         } else if (status.isInBlock) {
-          console.log(`Fees: ${fees.partialFee}`);
-          console.log(`Current status: ${status.type}`);
+          //console.log(`Fees: ${fees.partialFee}`);
+          //console.log(`Current status: ${status.type}`);
           events.forEach(({ event: { method, section, data } }) => {
             if (section.toString().includes('rolesModule')) {
               let meth = method.toString() + '\n';
-              let payed = '\n' + fees.partialFee.toString() + ' FS';
+              formatBalance.setDefaults({ decimals: 12, unit: 'FS' });
+              let payed = formatBalance(new BN(fees.partialFee.toString()),{ withSi: true, withZero: false });
               setEvents(`${meth} =>Paid fees: ${payed} `);
               setShowToast(true);
               setWarning(false);

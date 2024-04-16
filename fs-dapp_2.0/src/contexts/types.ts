@@ -26,8 +26,9 @@ export interface AppState {
 export interface AccountContextState {
   address: Address;
   role: AccountRole;
-  balance: BN | undefined;
+  balance: string | undefined;
   infos:string;
+  investor:InvestorData|undefined;
 }
 
 export interface CouncilSessionContextState {
@@ -59,6 +60,21 @@ export interface DataType {
   referendum:string;
   hash:string;
   infos:string; 
+}
+
+export interface InvestorData{
+  name:string|undefined;
+  address:string;
+  balance: string|undefined;
+  fund_share: string;
+  available_funds:string;
+  
+}
+
+export interface SellerData{
+  name:string|undefined;
+  address:string;
+  balance: string;
 }
 
 export const isRoleValid = (_role: string): boolean => {

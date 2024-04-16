@@ -1,14 +1,14 @@
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 import { useAccountContext } from '../../contexts/Account_Context';
-import React, { useEffect,MouseEvent,useState,useCallback } from 'react';
+import { useEffect,MouseEvent,useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useConcilSessionContext } from '../../contexts/CouncilSessionContext';
 import { DataType, Proposal } from '@/src/contexts/types';
 import { web3FromAddress } from '@polkadot/extension-dapp';
 import { Toast } from 'flowbite-react';
 import { NotificationTwoTone, WarningTwoTone } from '@ant-design/icons';
+import {BN,formatBalance} from '@polkadot/util';
 
-import BN from 'bn.js';
 import { toUnit } from '../shared/utils';
 import RolesApp from '../shared/modal';
 import Referendum from '../shared/referendum';
@@ -18,6 +18,13 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { Avatar,  Divider, List, Skeleton } from "antd";
 import { Button  } from 'antd';
 
+export function arrangeText(val:string){
+  let alltxt=val.split(":");
+  let output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}
+  `
+  let output0= output00.split(";")
+  return output0
+}
 
 export default function Council() {
   const { api, blocks, selectedAccount,accounts,  dispatch } = useAppContext();
@@ -90,7 +97,8 @@ export default function Council() {
           events.forEach(({ event: { method, section, data } }) => {
             if (section.toString().includes('rolesModule')) {
               let meth = method.toString() + '\n';
-              let payed = '\n' + fees.partialFee.toString() + ' FS';
+              formatBalance.setDefaults({ decimals: 12, unit: 'FS' });
+              let payed = formatBalance(new BN(fees.partialFee.toString()),{ withSi: true, withZero: false });
               setEvents(`${meth} =>Paid fees: ${payed} `);
               setShowToast(true);
               setWarning(false);
@@ -124,14 +132,14 @@ export default function Council() {
       })
     })
   }
-  function arrangeText(){
-    if(!selectedProposal) return([""]);
-    let alltxt=selectedProposal.infos.split(":");
+  /*function arrangeText(val:string){
+    if(!val) return([""]);
+    let alltxt=val.split(":");
     let output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}
     `
     let output0= output00.split(";")
     return output0
-  }
+  }*/
 
    function getDatas(){
     if (!api||!selectedAccount) return;
@@ -192,7 +200,9 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
     });
     
     getDatas();
-    let txt = arrangeText();
+    let val = ""
+    if (!selectedProposal){val=""}else{val=selectedProposal.infos}
+    let txt = arrangeText(val);
     setOut(txt)   
     checkVote()
     
@@ -204,7 +214,7 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
 
     if(treshold<2){setClose(true)}else{setClose(false)};  
     //console.log(`Datas length after:${datas.length}`)
-  }, [api,selectedAccount,blocks,treshold,dispatch1]);
+  }, [blocks,api,selectedAccount,treshold,dispatch1]);
 
  
 const style1= { width: 310, height:250, background:`white`};
@@ -213,7 +223,7 @@ const style3= { width: 310, height:250, background:`#f4ffb8`};
 const style4= { width: 410, height:400, background:`white`};
 if(!selectedAccount||!council_members.includes(selectedAccount)){
   return(
-    <div>
+    <div className=' flex font-bold text-5xl justify-center py-12'>
     You Are not a Council Member
   </div>
   )
@@ -298,9 +308,6 @@ if(!selectedAccount||!council_members.includes(selectedAccount)){
       )}
   </p>
   </div>
- 
- 
-
   </div>
   
   );

@@ -1,19 +1,21 @@
 import { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AccountContextState } from './types';
+import { AccountContextState, InvestorData } from './types';
 import BN from 'bn.js';
 
 const initialAccount: AccountContextState = {
   address: '',
   role: [],
   balance: undefined,
-  infos: 'No Information Provided'
+  infos: 'No Information Provided',
+  investor: undefined,
 };
 
 type Action =
   | { type: 'SET_ADDRESS'; payload: string }
   | { type: 'SET_ROLES'; payload: string[] }
-  | { type: 'SET_BALANCE'; payload: BN }
-  | { type: 'SET_INFOS'; payload: string };
+  | { type: 'SET_BALANCE'; payload: string }
+  | { type: 'SET_INFOS'; payload: string }
+  | { type: 'SET_INVESTOR'; payload: InvestorData};
 
 function reducer(state: AccountContextState, action: Action): AccountContextState {
   switch (action.type) {
@@ -25,7 +27,8 @@ function reducer(state: AccountContextState, action: Action): AccountContextStat
       return { ...state, balance: action.payload };
     case 'SET_INFOS':
       return { ...state, infos:action.payload};
-
+    case 'SET_INVESTOR':
+      return { ...state, investor:action.payload};
     default:
       return state;
   }
@@ -42,7 +45,7 @@ type Props = {
   children: ReactNode;
 };
 export function AccountProvider({ children }: Props) {
-  const [{ address, role, balance,infos }, dispatch0] = useReducer(reducer, initialAccount);
+  const [{ address, role, balance,infos,investor }, dispatch0] = useReducer(reducer, initialAccount);
   return (
     <AccountContext.Provider
       value={{
@@ -50,6 +53,7 @@ export function AccountProvider({ children }: Props) {
         role,
         balance,
         infos,
+        investor,
         dispatch0,
       }}
     >

@@ -3,8 +3,7 @@ import { useAccountContext } from '../../contexts/Account_Context';
 import React, { useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useConcilSessionContext } from '../../contexts/CouncilSessionContext';
-import BN from 'bn.js';
-import { toUnit } from '../shared/utils';
+import {BN,formatBalance} from '@polkadot/util';
 import RolesApp from '../shared/modal';
 import Referendum from '../shared/referendum';
 import { Card, Col, Space } from 'antd';
@@ -52,7 +51,7 @@ export default function Roles() {
       });
       
     });
-    //console.log(`role in session:${role_in_session}`)
+    //console.log(`role in session:${role}`)
   }, [role_in_session,selectedAccount, blocks, dispatch1, api]);
 
 
@@ -69,9 +68,10 @@ export default function Roles() {
     });
 
     api.query.system.account(address0, ({ data: free }: { data: { free: BN } }) => {
-      let { free: balance1 } = free;
+      formatBalance.setDefaults({ decimals: 12, unit: 'FS' });
+      const free0 = formatBalance(free.free,{ withSi: true, withZero: false });
 
-      dispatch0({ type: 'SET_BALANCE', payload: balance1 });
+      dispatch0({ type: 'SET_BALANCE', payload: free0 });
     });
 
    /*
@@ -112,7 +112,7 @@ export default function Roles() {
                     selectedAccount.address.slice(-6, -1)}
                 </p>
                 <p className="text-xl">
-                  Balance: {!balance ? '0' : toUnit(balance, 3).toString()} FS
+                  Balance: {!balance ? '0' : balance} 
                 </p>
                 <p className="text-xl">
                   Credentials: {!credentials ? 'No Credentials' : credentials}
