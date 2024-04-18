@@ -63,11 +63,13 @@ export interface DataType {
 }
 
 export interface InvestorData{
-  name:string|undefined;
+  name:string;
   address:string;
-  balance: string|undefined;
+  balance: string;
   fund_share: string;
   available_funds:string;
+  reserved_funds:string;
+  invested_funds:string;
   
 }
 

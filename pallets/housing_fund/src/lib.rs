@@ -213,6 +213,19 @@ pub mod pallet {
 				ExistenceRequirement::AllowDeath,
 			)?;
 
+			//Contributors shares are updated in their respective profiles
+			let shares = Self::get_contribution_share();
+			//let keys = ROLES::InvestorLog::<T>::ke
+			for i in shares {
+				if ROLES::InvestorLog::<T>::contains_key(i.account_id.clone()) {
+					let mut inv=ROLES::InvestorLog::<T>::get(&i.account_id).unwrap();
+					inv.share=i.share;
+					ROLES::InvestorLog::<T>::mutate(i.account_id.clone(),|val|{
+						*val=Some(inv);
+					});
+				}
+			}
+
 			// Emit an event.
 			Self::deposit_event(Event::ContributeSucceeded(who, amount, block_number));
 

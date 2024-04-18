@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, ReactNode } from 'react';
 import { ApiPromise } from '@polkadot/api';
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 import { AppState } from './types';
-import BN from 'bn.js';
+import {BN} from '@polkadot/util';
 
 const initialState: AppState = {
   api: null,

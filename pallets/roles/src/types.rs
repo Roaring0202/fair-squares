@@ -15,6 +15,7 @@ pub use frame_support::{
 	dispatch::GetDispatchInfo,
 	PalletId,
 };
+use sp_runtime::Percent;
 pub use sp_std::vec::Vec;
 pub use frame_system::{ensure_signed, ensure_root, pallet_prelude::*, RawOrigin};
 pub use scale_info::{prelude::vec, TypeInfo};
@@ -94,7 +95,7 @@ impl<T: Config> Proposal<T>{
 pub struct Investor<T: Config> {
 	pub account_id: T::AccountId,
 	pub age: BlockNumberOf<T>,
-	pub share: BalanceOf<T>,
+	pub share: Percent,
 	pub selections: u32,
 	pub infos: BoundedVecOf<T>
 }
