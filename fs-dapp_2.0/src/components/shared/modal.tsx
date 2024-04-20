@@ -54,7 +54,7 @@ const RolesApp: React.FC = () => {
           events.forEach(({ event: { method, section, data } }) => {
             if (section.toString().includes('rolesModule')) {
               let meth = method.toString() + '\n';
-              formatBalance.setDefaults({ decimals: 12, unit: 'FS' });
+              formatBalance.setDefaults({ decimals: 11, unit: 'USD' });
               let payed = formatBalance(new BN(fees.partialFee.toString()),{ withSi: true, withZero: false });
               setEvents(`${meth} =>Paid fees: ${payed} `);
               setShowToast(true);

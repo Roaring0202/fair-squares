@@ -68,7 +68,7 @@ export default function Roles() {
     });
 
     api.query.system.account(address0, ({ data: free }: { data: { free: BN } }) => {
-      formatBalance.setDefaults({ decimals: 12, unit: 'FS' });
+      formatBalance.setDefaults({ decimals: 11, unit: 'USD' });
       const free0 = formatBalance(free.free,{ withSi: true, withZero: false });
 
       dispatch0({ type: 'SET_BALANCE', payload: free0 });

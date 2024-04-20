@@ -9,13 +9,9 @@ import { Toast } from 'flowbite-react';
 import { NotificationTwoTone, WarningTwoTone } from '@ant-design/icons';
 import {BN,formatBalance} from '@polkadot/util';
 
-import { toUnit } from '../shared/utils';
-import RolesApp from '../shared/modal';
-import Referendum from '../shared/referendum';
-import { Card, Col, Space } from 'antd';
-import Identicon from '@polkadot/react-identicon';
-import InfiniteScroll from "react-infinite-scroll-component";
-import { Avatar,  Divider, List, Skeleton } from "antd";
+
+import { Card} from 'antd';
+import { List } from "antd";
 import { Button  } from 'antd';
 
 export function arrangeText(val:string){
@@ -97,7 +93,7 @@ export default function Council() {
           events.forEach(({ event: { method, section, data } }) => {
             if (section.toString().includes('rolesModule')) {
               let meth = method.toString() + '\n';
-              formatBalance.setDefaults({ decimals: 12, unit: 'FS' });
+              formatBalance.setDefaults({ decimals: 11, unit: 'USD' });
               let payed = formatBalance(new BN(fees.partialFee.toString()),{ withSi: true, withZero: false });
               setEvents(`${meth} =>Paid fees: ${payed} `);
               setShowToast(true);

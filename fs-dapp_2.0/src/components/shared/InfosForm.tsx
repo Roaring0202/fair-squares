@@ -3,7 +3,6 @@ import { useAccountContext } from '../../contexts/Account_Context';
 import { useAppContext } from '../../contexts/AppContext';
 import { Button } from 'flowbite-react';
 
-
 type Details = {
     picture: string;
     fullname: string;

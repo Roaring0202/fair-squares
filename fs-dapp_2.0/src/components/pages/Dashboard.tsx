@@ -4,7 +4,6 @@ import { useAccountContext } from '../../contexts/Account_Context';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import {BN,formatBalance} from '@polkadot/util';
-import { toUnit } from '../shared/utils';
 import { NavLink } from 'react-router-dom';
 import { all } from 'axios';
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -133,7 +132,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-3xl text-slate-700 font-bold">DASHBOARD</h1>
         <p className="text-xl font-bold">
-          House Fund: {!treasury_balance ? '0' :formatBalance(treasury_balance,{ decimals:12, withUnit:'FS',withSi: true, withZero: false })}
+          House Fund: {!treasury_balance ? '0' :formatBalance(treasury_balance,{ decimals:11, withUnit:'USD',withSi: true, withZero: false })}
         </p>
         <p className="text-xl font-bold">Total Number of Users: {total_users_nbr}</p>
       </div>

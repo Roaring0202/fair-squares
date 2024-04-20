@@ -45,9 +45,14 @@ pub mod pallet {
 	pub trait Config: frame_system::Config + NFT::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		#[pallet::constant]
 		type MinContribution: Get<BalanceOf<Self>>;
+
 		type FundThreshold: Get<BalanceOf<Self>>;
+
+		#[pallet::constant]
 		type MaxFundContribution: Get<BalanceOf<Self>>;
+		
 		type MaxInvestorPerHouse: Get<u32>;
 		type PalletId: Get<PalletId>;
 
