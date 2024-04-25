@@ -6,8 +6,8 @@ type Details = {
     picture: string;
     fullname: string;
     email: string;
-    website: string;
-    reason: string;
+    asset_website: string;
+    description: string;
     notes: string;
 }
 
@@ -25,9 +25,9 @@ export function DetailsPage(){
             pic=`../../../johndoe.png`
            
         }else{pic=details.picture}
-        let all_infos:string = `${details.fullname}:${pic}:${details.email}:${details.website}:${details.reason}:${details.notes}`;
+        let all_infos:string = `${details.fullname}:${pic}:${details.email}:${details.asset_website}:${details.description}:${details.notes}`;
         dispatch0({type:`SET_INFOS`,payload:all_infos});
-        //console.log(infos.split(`:`)[1]);
+
 
     }
 
@@ -45,11 +45,9 @@ export function DetailsPage(){
                     <select 
                     id="picture" 
                     {...register('picture')}>
-                    <option value= "../../../johndoe.png">John DOE</option>
-                    <option value= "../../../INVESTOR.png">INVESTOR</option>
-                    <option value= "../../../SELLER.png">SELLER</option>
-                    <option value= "../../../SERVICER.png">SERVICER</option>
-                    <option value= "../../../TENANT.png">TENANT</option>
+                    <option value= "../../../APPARTMENTS.png">APPARTMENTS</option>
+                    <option value= "../../../HOUSES.png">HOUSES</option>
+                    <option value= "../../../OFFICES.png">OFFICES</option>
                     </select>
                 </div>
                 <div className={fieldstyle}>
@@ -65,12 +63,12 @@ export function DetailsPage(){
                     })}/>
                 </div>
                 <div className={fieldstyle}>
-                    <label htmlFor='website'>One of your social website(Linkedin, Facebook, etc...)</label>
-                    <input type='text' id="website" {...register('website')}/>
+                    <label htmlFor='asset_website'>One of your social website(Linkedin, Facebook, etc...)</label>
+                    <input type='text' id="asset_website" {...register('asset_website')}/>
                 </div>
                 <div className={fieldstyle}>
-                    <label htmlFor='reason'>Subscription Motivation</label>
-                    <input type='text' id="reason" {...register('reason')}/>
+                    <label htmlFor='description'>Subscription Motivation</label>
+                    <input type='text' id="description" {...register('description')}/>
                 </div>
                 <div className={fieldstyle}>
                     <label htmlFor='notes'>Additional Informations</label>

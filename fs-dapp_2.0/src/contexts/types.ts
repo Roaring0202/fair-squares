@@ -4,6 +4,8 @@ import BN from 'bn.js';
 
 export type Address = string | undefined;
 export type AccountRole = string[];
+
+//Will deprecated
 export interface AppState {
   api: ApiPromise | null;
   accounts: InjectedAccountWithMeta[];
@@ -30,6 +32,7 @@ export interface AccountContextState {
   infos:string;
   investor:InvestorData|undefined;
 }
+
 
 export interface CouncilSessionContextState {
   approved: boolean;
@@ -78,10 +81,42 @@ export interface SellerData{
   address:string;
   balance: string;
 }
+export interface AssetData{
+  collection_type: string,
+  item_id:number,
+  owner_address:string,
+  infos:string,
+}
 
+export interface RolesData{
+  total_users_nbr: number,
+  inv_nbr: number,
+  seller_nbr: number,
+  awaiting_seller_nbr: number,
+  servicer_nbr: number,
+  awaiting_servicer_nbr: number,
+  tenant_nbr: number,
+}
+
+export interface KiltData{
+  web3Name: string | undefined,
+  attester: string | undefined,
+  credentials: string | undefined,
+}
+
+export interface ApiData{
+  api: ApiPromise | null,
+  accounts: InjectedAccountWithMeta[],
+  selectedAccount: InjectedAccountWithMeta | undefined,
+  selectedAddress: Address,
+  blocks: string,
+  treasury_balance: BN | undefined,
+
+}
 export const isRoleValid = (_role: string): boolean => {
   if (!_role) return false;
   return ROLES.indexOf(_role) !== -1;
 };
 
 export const ROLES = ['INVESTOR', 'TENANT', 'SELLER', 'SERVICER', 'NOTARY', 'REPRESENTATIVE'];
+export const ASSETS = ['HOUSES','OFFICES','APPARTMENTS']

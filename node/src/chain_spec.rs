@@ -253,7 +253,7 @@ fn testnet_genesis(
 		},
 		"nftModule": {
 			"owner": Some(root_key.clone()),
-			"collectionId": Some(0),
+			"collectionId": Some(2),
 			"createdBy": Some(pallet_roles::Accounts::SERVICER),
 			"metadata": META,
 		},

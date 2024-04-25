@@ -14,10 +14,10 @@ import { Card} from 'antd';
 import { List } from "antd";
 import { Button  } from 'antd';
 
+//Must be updated
 export function arrangeText(val:string){
   let alltxt=val.split(":");
-  let output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}
-  `
+  let output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}`
   let output0= output00.split(";")
   return output0
 }
@@ -33,6 +33,7 @@ export default function Council() {
   const [warning, setWarning] = useState(false);
   const [treshold,setTres] = useState(0);
   const [close,setClose] = useState(true);
+  const [hcouncil,setHcouncil] = useState(false);
   const initprop:Proposal={voter_id:undefined,Referendum_account:undefined,session_closed:false,approved:false,ayes:0,nay:0,hash:"",infos:""}
     
   const getproposal= (item:MouseEvent)=>{
@@ -71,8 +72,12 @@ export default function Council() {
     let who = selectedAccount.address;
     let prop = selectedProposal.Referendum_account?.address
     if(!prop) return;
-    const tx = await api.tx.rolesModule.councilVote(prop,vote);
-    const fees = await tx.paymentInfo(who);
+
+      let tx = await api.tx.rolesModule.councilVote(prop,vote);
+      if (hcouncil){
+        tx = await api.tx.councilModule.housingCouncilVote(prop,vote);
+      }
+      const fees = await tx.paymentInfo(who);
       const injector = await web3FromAddress(who);
       tx.signAndSend(who, { signer: injector.signer }, ({ status, events, dispatchError }) => {
         if (dispatchError && status.isInBlock) {
@@ -91,7 +96,9 @@ export default function Council() {
          // console.log(`Fees: ${fees.partialFee}`);
          // console.log(`Current status: ${status.type}`);
           events.forEach(({ event: { method, section, data } }) => {
-            if (section.toString().includes('rolesModule')) {
+            let id='';
+            hcouncil?(id='councilModule'):(id='rolesModule');
+            if (section.toString().includes(id)) {
               let meth = method.toString() + '\n';
               formatBalance.setDefaults({ decimals: 11, unit: 'USD' });
               let payed = formatBalance(new BN(fees.partialFee.toString()),{ withSi: true, withZero: false });
@@ -177,23 +184,46 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
   
    useEffect(() => {
     if (!api || !selectedAccount) return;
-    api.query.backgroundCouncil.members((who: any[]) => {
+    if(hcouncil){
+      api.query.backgroundCouncil.members((who: any[]) => {
       
-      let members:InjectedAccountWithMeta[]=[];
-      
-      
-      who.forEach((x)=>{
-        let y=x.toHuman();
-        accounts.forEach((ac)=>{
-          if(ac.address===y){
-            members.push(ac)
-          }
+        let members:InjectedAccountWithMeta[]=[];
+        
+        
+        who.forEach((x)=>{
+          let y=x.toHuman();
+          accounts.forEach((ac)=>{
+            if(ac.address===y){
+              members.push(ac)
+            }
+          })
         })
-      })
-      //console.log(members)
+        //console.log(members)
+        
+        dispatch1({ type: 'SET_COUNCIL_MEMBERS', payload: members });
+      });
+    }else{
+      api.query.council.members((who: any[]) => {
       
-      dispatch1({ type: 'SET_COUNCIL_MEMBERS', payload: members });
-    });
+        let members:InjectedAccountWithMeta[]=[];
+        
+        
+        who.forEach((x)=>{
+          let y=x.toHuman();
+          accounts.forEach((ac)=>{
+            if(ac.address===y){
+              members.push(ac)
+            }
+          })
+        })
+        //console.log(members)
+        
+        dispatch1({ type: 'SET_COUNCIL_MEMBERS', payload: members });
+      });
+    }
+    
+
+
     
     getDatas();
     let val = ""
@@ -245,12 +275,14 @@ if(!selectedAccount||!council_members.includes(selectedAccount)){
             cover={<img alt="example" style={{height:"30%", width:"30%"}} src={item.infos.split(`:`)[1]}/>}
       style={(item.status==="AWAITING" && item.referendum==="false")?style1:
              ((item.status==="AWAITING" && item.referendum==="true")?style2:style3)}>
+
             <List.Item key={item.address}>
               <List.Item.Meta
                 title={<p>{item.address.slice(0,6)+'...'+item.address.slice(-6,-1)}</p>}
                 description={<div><p>Requested Role: {item.role}</p><p>Request Status: {item.status}</p><p>Session is closed: {item.referendum}</p></div>}
               />
             </List.Item>
+            
             </Card>
           )}
 
