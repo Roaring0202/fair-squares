@@ -61,7 +61,9 @@ export default function SideBar() {
             ):<p></p>}
             
             {(r0.includes("SELLER"))?(
-            <Sidebar.Item href="#">Sellers</Sidebar.Item>
+            <Sidebar.Item href="#">
+              <NavLink to="seller">Sellers</NavLink>
+            </Sidebar.Item>
           ):<p></p>}
 
           {(r0.includes("TENANT"))?(

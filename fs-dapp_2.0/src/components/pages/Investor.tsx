@@ -1,7 +1,7 @@
 import { useAccountContext } from '../../contexts/Account_Context';
 import React, { useEffect,useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import { arrangeText } from './Council';
+import { arrangeText0 } from '../../contexts/types';
 import { InvestorData } from '@/src/contexts/types';
 import {BN} from '@polkadot/util';
 import { toUnit } from '../shared/utils';
@@ -34,7 +34,7 @@ useEffect(()=>{
         let data0= datalog.toHuman();
         if(data0){
             let txt = data0.infos
-            let infos = arrangeText(txt);       
+            let infos = arrangeText0(txt,true);       
             let datas0:InvestorData={...data0,name:infos[0],address:selectedAccount.address,balance:balance,fund_share:data0.share};
             dispatch0({ type: 'SET_INVESTOR', payload: datas0 });
           api.query.housingFundModule.contributions(address0,(data:any)=>{

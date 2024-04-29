@@ -76,13 +76,19 @@ export interface InvestorData{
   
 }
 
+export interface AssetContextState{
+  seller: SellerData|undefined;
+  assets: AssetData[];
+  selected_asset: AssetData|undefined;
+}
+
 export interface SellerData{
   name:string|undefined;
   address:string;
   balance: string;
 }
 export interface AssetData{
-  collection_type: string,
+  collection_id: number,
   item_id:number,
   owner_address:string,
   infos:string,
@@ -117,6 +123,19 @@ export const isRoleValid = (_role: string): boolean => {
   if (!_role) return false;
   return ROLES.indexOf(_role) !== -1;
 };
+
+export function arrangeText0(val:string, user:boolean){
+  let alltxt=val.split(":");
+  let output00=""
+  if (user===true){
+    output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}`
+  }else{
+    output00=`Asset Name: ${alltxt[0]};Contact E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]}; Description: ${alltxt[4]};Additional Notes: ${alltxt[5]}`
+  }
+  
+  let output0= output00.split(";")
+  return output0
+}
 
 export const ROLES = ['INVESTOR', 'TENANT', 'SELLER', 'SERVICER', 'NOTARY', 'REPRESENTATIVE'];
 export const ASSETS = ['HOUSES','OFFICES','APPARTMENTS']

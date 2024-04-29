@@ -5,6 +5,7 @@ import HomePage from './components/pages/HomePage';
 import Roles from './components/pages/Roles';
 import Council from './components/pages/Council';
 import Investors from './components/pages/Investor';
+import Seller from './components/pages/Seller';
 
 const router = createBrowserRouter([
   {
@@ -15,7 +16,8 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'roles', element: <Roles /> },
       { path: 'council', element: <Council />},
-      { path: 'investors', element:<Investors/>}
+      { path: 'investors', element:<Investors/>},
+      { path: 'seller', element:<Seller/>},
     ],
   },
 ]);

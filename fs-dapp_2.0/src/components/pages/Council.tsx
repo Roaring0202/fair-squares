@@ -1,31 +1,20 @@
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
-import { useAccountContext } from '../../contexts/Account_Context';
 import { useEffect,MouseEvent,useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useConcilSessionContext } from '../../contexts/CouncilSessionContext';
-import { DataType, Proposal } from '@/src/contexts/types';
+import { DataType, Proposal } from '../../contexts/types';
 import { web3FromAddress } from '@polkadot/extension-dapp';
 import { Toast } from 'flowbite-react';
 import { NotificationTwoTone, WarningTwoTone } from '@ant-design/icons';
 import {BN,formatBalance} from '@polkadot/util';
-
-
+import { arrangeText0 } from '../../contexts/types';
 import { Card} from 'antd';
 import { List } from "antd";
 import { Button  } from 'antd';
 
-//Must be updated
-export function arrangeText(val:string){
-  let alltxt=val.split(":");
-  let output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}`
-  let output0= output00.split(";")
-  return output0
-}
-
 export default function Council() {
-  const { api, blocks, selectedAccount,accounts,  dispatch } = useAppContext();
-  const { role, balance, dispatch0 } = useAccountContext();
-  const { session_closed,approved,role_in_session,nay,ayes,council_members,selectedProposal,proposals, datas,dispatch1 } = useConcilSessionContext();
+  const { api, blocks, selectedAccount,accounts} = useAppContext();
+  const { nay,ayes,council_members,selectedProposal,proposals, datas,dispatch1 } = useConcilSessionContext();
   const [out,setOut]= useState<string[]>();
   const [voted,setVoted]= useState(false);
   const [event, setEvents] = useState('No Vote');
@@ -135,14 +124,7 @@ export default function Council() {
       })
     })
   }
-  /*function arrangeText(val:string){
-    if(!val) return([""]);
-    let alltxt=val.split(":");
-    let output00=`FullName: ${alltxt[0]};E-MAIL: ${alltxt[2]};WebSite: ${alltxt[3]};Motivation: ${alltxt[4]};Additional Notes: ${alltxt[5]}
-    `
-    let output0= output00.split(";")
-    return output0
-  }*/
+
 
    function getDatas(){
     if (!api||!selectedAccount) return;
@@ -228,7 +210,7 @@ dispatch1({type:`SET_PROPOSALS`,payload:props});
     getDatas();
     let val = ""
     if (!selectedProposal){val=""}else{val=selectedProposal.infos}
-    let txt = arrangeText(val);
+    let txt = arrangeText0(val,true);
     setOut(txt)   
     checkVote()
     
