@@ -1,4 +1,5 @@
 use super::*;
+use crate::Roles::Hash;
 
 pub use codec::HasCompact;
 pub use frame_support::{
@@ -16,7 +17,7 @@ pub use frame_system::{ensure_signed, pallet_prelude::*, RawOrigin};
 
 pub use sp_runtime::{
 	traits::{AccountIdConversion, AtLeast32BitUnsigned, Saturating, StaticLookup, Zero},
-	DispatchError,
+	DispatchError, Percent,
 };
 pub use sp_std::boxed::Box;
 
@@ -27,6 +28,7 @@ impl<T: Config> Pallet<T> {
 		metadata: Nft::BoundedVecOfUnq<T>,
 		new_price: Option<BalanceOf<T>>,
 		item_id: T::NftItemId,
+		max_tenants: u8,
 	) -> DispatchResult {
 		let coll_id: T::NftCollectionId = collection.clone().value().into();
 		// Mint nft
@@ -36,7 +38,7 @@ impl<T: Config> Pallet<T> {
 		// Set asset price
 		Self::price(origin, collection, item_id, new_price).ok();
 		// Create Asset
-		Asset::<T>::new(coll_id, item_id, infos, new_price).ok();
+		Asset::<T>::new(coll_id, item_id, infos, new_price,max_tenants).ok();
 
 		Ok(())
 	}
@@ -145,26 +147,21 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	// Conversion of u64 to BalanxceOf<T>
-	pub fn u64_to_balance_option(input: u64) -> Option<BalanceOf<T>> {
-		input.try_into().ok()
-	}
-
-	// Conversion of BalanceOf<T> to u32
-	pub fn balance_to_u64_option(input: BalanceOf<T>) -> Option<u64> {
-		input.try_into().ok()
-	}
-
 	pub fn account_id() -> T::AccountId {
 		T::FeesAccount::get().into_account_truncating()
 	}
 
-	pub fn filter_by_status(status: types::AssetStatus) -> Vec<(
+	fn get_houses_by_status(
+		status: types::AssetStatus,
+	) -> Vec<(
 		<T as pallet_nft::Config>::NftCollectionId,
 		<T as pallet_nft::Config>::NftItemId,
-		types::Asset<T>
+		types::Asset<T>,
 	)> {
-		Houses::<T>::iter().filter(|(_, _, house)| house.status == status).map(|(collection_id, item_id, house)| (collection_id, item_id, house)).collect()
+		Houses::<T>::iter()
+			.filter(|(_, _, house)| house.status == status)
+			.map(|(collection_id, item_id, house)| (collection_id, item_id, house))
+			.collect()
 	}
 
 	pub fn get_onboarded_houses() -> Vec<(
@@ -172,7 +169,7 @@ impl<T: Config> Pallet<T> {
 		<T as pallet_nft::Config>::NftItemId,
 		types::Asset<T>,
 	)> {
-		Self::filter_by_status(types::AssetStatus::ONBOARDED)
+		Self::get_houses_by_status(types::AssetStatus::ONBOARDED)
 	}
 
 	pub fn get_finalised_houses() -> Vec<(
@@ -180,6 +177,48 @@ impl<T: Config> Pallet<T> {
 		<T as pallet_nft::Config>::NftItemId,
 		types::Asset<T>,
 	)> {
-		Self::filter_by_status(types::AssetStatus::FINALISED)
+		Self::get_houses_by_status(types::AssetStatus::FINALISED)
+	}
+
+	pub fn get_finalising_houses() -> Vec<(
+		<T as pallet_nft::Config>::NftCollectionId,
+		<T as pallet_nft::Config>::NftItemId,
+		types::Asset<T>,
+	)> {
+		Self::get_houses_by_status(types::AssetStatus::FINALISING)
+	}
+
+	pub fn do_submit_proposal(
+		origin: OriginFor<T>,
+		collection: NftCollectionOf,
+		item_id: T::NftItemId,
+	) {
+		//Change asset status to REVIEWING
+		Self::change_status(origin.clone(), collection, item_id, AssetStatus::REVIEWING).ok();
+		//Send Proposal struct to voting pallet
+		//get the needed call and convert them to pallet_voting format
+		let collection_id: T::NftCollectionId = collection.clone().value().into();
+		let out_call = Vcalls::<T>::get(collection_id, item_id).unwrap();
+
+		let w_status0 =
+			Box::new(Self::get_formatted_collective_proposal(*out_call.democracy_status).unwrap());
+		let w_status1 =
+			Box::new(Self::get_formatted_collective_proposal(*out_call.after_vote_status).unwrap());
+
+		let w_r_destroy =
+			Box::new(Self::get_formatted_collective_proposal(*out_call.reject_destroy).unwrap());
+		let w_r_edit =
+			Box::new(Self::get_formatted_collective_proposal(*out_call.reject_edit).unwrap());
+
+		let proposal_hash = T::Hashing::hash_of(&w_status1);
+		Houses::<T>::mutate_exists(collection_id, item_id, |val| {
+			let mut v0 = val.clone().unwrap();
+			v0.proposal_hash = proposal_hash;
+			*val = Some(v0)
+		});
+
+		//Send Calls struct to voting pallet
+		Votes::Pallet::<T>::submit_proposal(origin, w_status1, w_status0, w_r_destroy, w_r_edit)
+			.ok();
 	}
 }

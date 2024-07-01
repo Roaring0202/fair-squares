@@ -110,7 +110,7 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn tenants)]
 	///Registry of Tenants organized by AccountId
-	pub(super) type TenantLog<T: Config> =
+	pub type TenantLog<T: Config> =
 		StorageMap<_, Twox64Concat, AccountIdOf<T>, Tenant<T>, OptionQuery>;
 
 	#[pallet::storage]
@@ -170,6 +170,11 @@ pub mod pallet {
 	pub type AccountsRolesLog<T: Config> =
 		StorageMap<_, Twox64Concat, AccountIdOf<T>, Accounts, OptionQuery>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn get_requested_role)]
+	pub type RequestedRoles<T: Config> =
+		StorageMap<_, Twox64Concat, AccountIdOf<T>, Accounts, OptionQuery>;
+
 	#[pallet::type_value]
 	///Initializing function for the total number of members
 	pub(super) fn InitTotalMembers<T: Config>() -> u32 {
@@ -180,24 +185,42 @@ pub mod pallet {
 	#[pallet::getter(fn total_members)]
 	pub(super) type TotalMembers<T> = StorageValue<_, u32, ValueQuery, InitTotalMembers<T>>;
 
+	#[pallet::type_value]
+	///Initializing function for the total number of Rep members
+	pub fn InitRepMembers<T: Config>() -> u32 {
+		0
+	}
+
+	#[pallet::storage]
+	#[pallet::getter(fn rep_num)]
+	///Number of active Representative
+	pub type RepNumber<T: Config> = StorageValue<_, u32, ValueQuery, InitRepMembers<T>>;
+
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		pub new_admin: Option<T::AccountId>,
+		pub representatives: Vec<T::AccountId>,
 	}
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			Self { new_admin: Default::default() }
+			Self { new_admin: Default::default(), representatives: vec![] }
 		}
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			let servicer0 = self.new_admin.clone().unwrap(); // AccountId
-			let origin = T::Origin::from(RawOrigin::Signed(servicer0.clone())); //Origin
-			let source = T::Lookup::unlookup(servicer0); //Source
-			crate::Pallet::<T>::set_manager(origin, source).ok();
+			if self.new_admin.is_some() {
+				let servicer0 = self.new_admin.clone().unwrap(); // AccountId
+				let origin = T::Origin::from(RawOrigin::Signed(servicer0.clone())); //Origin
+				let source = T::Lookup::unlookup(servicer0); //Source
+				crate::Pallet::<T>::set_manager(origin, source).ok();
+			}
+
+			if !self.representatives.is_empty() {
+				crate::Pallet::<T>::init_representatives(self.representatives.clone());
+			}
 		}
 	}
 
@@ -222,6 +245,8 @@ pub mod pallet {
 		SellerAccountCreationRejected(T::BlockNumber, T::AccountId),
 		/// Servicer role request rejected
 		ServicerAccountCreationRejected(T::BlockNumber, T::AccountId),
+		/// Notary role request rejected
+		NotaryAccountCreationRejected(T::BlockNumber, T::AccountId),
 		/// Role request added to the role approval waiting list
 		CreationRequestCreated(T::BlockNumber, T::AccountId),
 	}
@@ -247,6 +272,8 @@ pub mod pallet {
 		TotalMembersExceeded,
 		/// Action reserved to servicers
 		OnlyForServicers,
+		/// Cannot do the approval or rejection
+		UnAuthorized,
 	}
 
 	#[pallet::call]
@@ -265,6 +292,7 @@ pub mod pallet {
 			Self::check_account_role(account.clone())?;
 			let now = <frame_system::Pallet<T>>::block_number();
 			let members = Self::total_members();
+			let requested = Self::get_requested_role(&account).is_some();
 			match account_type {
 				Accounts::INVESTOR => {
 					let investor = <T as frame_system::Config>::Origin::from(RawOrigin::Signed(
@@ -272,16 +300,16 @@ pub mod pallet {
 					));
 					Investor::<T>::new(investor).map_err(|_| <Error<T>>::InitializationError)?;
 					AccountsRolesLog::<T>::insert(&account, Accounts::INVESTOR);
-					TotalMembers::<T>::put(members + 1);
-					Self::deposit_event(Event::InvestorCreated(now, account));
+					Self::increase_total_members().ok();
+					Self::deposit_event(Event::InvestorCreated(now, account.clone()));
 				},
 				Accounts::SELLER => {
-					Self::check_role_approval_list(account.clone())?;
+					ensure!(!requested, <Error<T>>::AlreadyWaiting);
 					let seller = <T as frame_system::Config>::Origin::from(RawOrigin::Signed(
 						account.clone(),
 					));
 					HouseSeller::<T>::new(seller).map_err(|_| <Error<T>>::InitializationError)?;
-					Self::deposit_event(Event::CreationRequestCreated(now, account));
+					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
 				Accounts::TENANT => {
 					let tenant = <T as frame_system::Config>::Origin::from(RawOrigin::Signed(
@@ -289,50 +317,64 @@ pub mod pallet {
 					));
 					Tenant::<T>::new(tenant).map_err(|_| <Error<T>>::InitializationError)?;
 					AccountsRolesLog::<T>::insert(&account, Accounts::TENANT);
-					TotalMembers::<T>::put(members + 1);
-					Self::deposit_event(Event::TenantCreated(now, account));
+					Self::increase_total_members().ok();
+					Self::deposit_event(Event::TenantCreated(now, account.clone()));
 				},
 				Accounts::SERVICER => {
-					Self::check_role_approval_list(account.clone())?;
+					ensure!(!requested, <Error<T>>::AlreadyWaiting);
 					let servicer = <T as frame_system::Config>::Origin::from(RawOrigin::Signed(
 						account.clone(),
 					));
 					Servicer::<T>::new(servicer).map_err(|_| <Error<T>>::InitializationError)?;
-					Self::deposit_event(Event::CreationRequestCreated(now, account));
+					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
 				Accounts::NOTARY => {
-					Self::check_role_approval_list(account.clone())?;
+					ensure!(!requested, <Error<T>>::AlreadyWaiting);
 					let notary = <T as frame_system::Config>::Origin::from(RawOrigin::Signed(
 						account.clone(),
 					));
 					Notary::<T>::new(notary).map_err(|_| <Error<T>>::InitializationError)?;
-					Self::deposit_event(Event::CreationRequestCreated(now, account));
+					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
 				Accounts::REPRESENTATIVE => {
-					Self::check_role_approval_list(account.clone())?;
+					ensure!(!requested, <Error<T>>::AlreadyWaiting);
 					let representative = <T as frame_system::Config>::Origin::from(
 						RawOrigin::Signed(account.clone()),
 					);
 					Representative::<T>::new(representative)
 						.map_err(|_| <Error<T>>::InitializationError)?;
-					Self::deposit_event(Event::CreationRequestCreated(now, account));
+					Self::deposit_event(Event::CreationRequestCreated(now, account.clone()));
 				},
+			}
+
+			let need_approval = !matches!(
+				account_type,
+				Accounts::INVESTOR | Accounts::TENANT | Accounts::REPRESENTATIVE
+			);
+			if need_approval {
+				RequestedRoles::<T>::insert(&account, account_type);
+			} else {
+				TotalMembers::<T>::put(members + 1);
 			}
 
 			Ok(())
 		}
 
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::approval(5))]
-		///Approval function for Sellers and Servicers. Only for admin level.
+		///Approval function for Sellers, Servicers, and Notary. Only for admin level.
 		pub fn account_approval(origin: OriginFor<T>, account: T::AccountId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(
 				sender == SUDO::Pallet::<T>::key().unwrap(),
 				"only the current sudo key can sudo"
 			);
-			let members = Self::total_members();
+
+			let role = Self::get_requested_role(&account);
+			ensure!(role.is_some(), Error::<T>::NotInWaitingList);
+
+			ensure!(role != Some(Accounts::REPRESENTATIVE), Error::<T>::UnAuthorized);
+
 			Self::approve_account(sender, account.clone())?;
-			TotalMembers::<T>::put(members + 1);
 			let now = <frame_system::Pallet<T>>::block_number();
 			Self::deposit_event(Event::AccountCreationApproved(now, account));
 			Ok(())
@@ -346,7 +388,16 @@ pub mod pallet {
 				sender == SUDO::Pallet::<T>::key().unwrap(),
 				"only the current sudo key can sudo"
 			);
+
+			let role = Self::get_requested_role(&account);
+			ensure!(role.is_some(), Error::<T>::NotInWaitingList);
+
+			// We can't reject a representive role request
+			ensure!(role != Some(Accounts::REPRESENTATIVE), Error::<T>::UnAuthorized);
 			Self::reject_account(account.clone())?;
+
+			RequestedRoles::<T>::remove(&account);
+
 			let now = <frame_system::Pallet<T>>::block_number();
 			Self::deposit_event(Event::AccountCreationRejected(now, account));
 			Ok(())

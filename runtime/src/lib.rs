@@ -27,7 +27,7 @@ use sp_version::RuntimeVersion;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
-		EitherOfDiverse,EqualPrivilegeOnly,AsEnsureOriginWithArg,ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, Randomness, StorageInfo,
+		EitherOfDiverse,EqualPrivilegeOnly,AsEnsureOriginWithArg,ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, Randomness, StorageInfo,Contains,
 	},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -43,24 +43,27 @@ use frame_system::{
 	EnsureRoot, EnsureSigned,
 };
 pub use pallet_balances::Call as BalancesCall;
+pub use pallet_democracy;
+use pallet_nft::NftPermissions;
+pub use pallet_nft::{self, Acc, CollectionId, ItemId, NftPermission};
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
-pub use pallet_democracy;
-use pallet_nft::NftPermissions;
-pub use pallet_nft::{self, Acc, CollectionId, ItemId, NftPermission};
 
+pub use pallet_asset_management;
+pub use pallet_bidding;
+pub use pallet_housing_fund;
+pub use pallet_onboarding;
 /// Import the template pallet.
 pub use pallet_roles;
-pub use pallet_housing_fund;
+pub use pallet_share_distributor;
 pub use pallet_utility;
 pub use pallet_voting;
-pub use pallet_onboarding;
-pub use pallet_share_distributor;
-pub use pallet_bidding;
-pub use pallet_asset_management;
+pub use pallet_finalizer;
+pub use pallet_tenancy;
+pub use pallet_payment;
 // flag add pallet use
 
 /// An index to a block.
@@ -125,8 +128,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	state_version: 1,
 };
 
-
-
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
@@ -140,7 +141,6 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 
 /// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = WEIGHT_PER_SECOND.saturating_mul(2);
-
 
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
@@ -174,7 +174,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = DontAllowCollectiveAndDemocracy;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = RuntimeBlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -329,13 +329,44 @@ impl pallet_uniques::Config for Runtime {
 }
 
 parameter_types! {
+	pub const BasicDeposit: Balance = 10 * DOLLARS;       // 258 bytes on-chain
+	pub const FieldDeposit: Balance = 250 * CENTS;        // 66 bytes on-chain
+	pub const SubAccountDeposit: Balance = 2 * DOLLARS;   // 53 bytes on-chain
+	pub const MaxAdditionalFields: u32 = 100;
+	pub const MaxRegistrars: u32 = 1;
+	pub const MaxSubAccounts: u32 = 100;
+}
+
+impl pallet_identity::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type BasicDeposit = BasicDeposit;
+	type FieldDeposit = FieldDeposit;
+	type MaxRegistrars = MaxRegistrars;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type RegistrarOrigin = EnsureRoot<AccountId>;
+	type MaxAdditionalFields = MaxAdditionalFields;
+	type MaxSubAccounts = MaxSubAccounts;
+	type Slashed = Treasury;
+	type SubAccountDeposit = SubAccountDeposit;
+	type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_utility::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type PalletsOrigin = OriginCaller;
+	type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
 	pub const MaxMembers:u32 =200;
 }
 /// Configure the pallet-roles in pallets/roles.
 impl pallet_roles::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances;
-	type WeightInfo =  pallet_roles::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_roles::weights::SubstrateWeight<Runtime>;
 	type MaxMembers = MaxMembers;
 }
 
@@ -491,7 +522,7 @@ impl pallet_scheduler::Config for Runtime {
 
 parameter_types! {
 	pub const LaunchPeriod: BlockNumber = 24 * 60 * MINUTES;
-	pub const VotingPeriod: BlockNumber = 3 * MINUTES;//28 * 24 * 60 * MINUTES;
+	pub const VotingPeriod: BlockNumber = 12 * HOURS;//28 * 24 * 60 * MINUTES;
 	pub const FastTrackVotingPeriod: BlockNumber = 3 * 24 * 60 * MINUTES;
 	pub const MinimumDeposit: Balance = DOLLARS;
 	pub const EnactmentPeriod: BlockNumber = 30 * 24 * 60 * MINUTES;
@@ -550,8 +581,26 @@ impl pallet_democracy::Config for Runtime {
 	type MaxProposals = MaxProposals;
 }
 
+pub struct DontAllowCollectiveAndDemocracy;
+impl Contains<Call> for DontAllowCollectiveAndDemocracy {
+	fn contains(c: &Call) -> bool {
+		match c {
+			//Call::Democracy(_) => false,
+			Call::AssetManagementModule(pallet_asset_management::Call::execute_call_dispatch { .. }) => false,
+			//Call::Council(_) => false,
+			Call::NftModule(_) => false,
+			Call::OnboardingModule(pallet_onboarding::Call::do_something { .. }) => false,
+			// Call::OnboardingModule(pallet_onboarding::Call::change_status { .. }) => false,
+			Call::OnboardingModule(pallet_onboarding::Call::reject_edit { .. }) => false,
+			Call::OnboardingModule(pallet_onboarding::Call::reject_destroy { .. }) => false,
+			_ => true,
+		}
+	}
+}
+
 parameter_types! {
-	pub const ProposalFee: u64= 10;
+	pub const ProposalFee: Percent= Percent::from_percent(15);
+	pub const SlashedFee: Percent = Percent::from_percent(10);
 	pub const FeesAccount: PalletId = PalletId(*b"feeslash");
 }
 
@@ -560,6 +609,7 @@ impl pallet_onboarding::Config for Runtime {
 	type Currency = Balances;
 	type Prop = Call;
 	type ProposalFee = ProposalFee;
+	type Slash = SlashedFee;
 	type WeightInfo = ();
 	type FeesAccount = FeesAccount;
 }
@@ -618,9 +668,94 @@ impl pallet_bidding::Config for Runtime {
 	type MinimumSharePerInvestor = MinimumSharePerInvestor;
 	type NewAssetScanPeriod = NewAssetScanPeriod;
 }
+
+parameter_types! {
+	//Fees payed to the Representative by the tenant, to provide a judgement
+	pub const JudgementFee: Balance= 50*DOLLARS;
+	//Number of months for the guaranty deposit 
+	pub const GuarantyCoefficient: u32 = 3;
+	//Return on Rent
+	pub const RoR:Percent = Percent::from_percent(3);
+	//Period between check of rent payment status for active tenants
+	pub const RentCheckPeriod: BlockNumber = 15*DAYS;
+	//Lease period in number of blocks
+	pub const ContractLength: BlockNumber = 365*DAYS;
+	//Lease period in number of months
+	pub const Lease: u32 = 12;
+	//Maintenance fees taken on monthly rent
+	pub const Maintenance:Percent = Percent::from_percent(3);
+}
 impl pallet_asset_management::Config for Runtime {
 	type Event = Event;
+	type Call = Call;
+	type Delay = Delay;
+	type CheckDelay = CheckDelay;
+	type InvestorVoteAmount = InvestorVoteAmount;
+	type CheckPeriod = CheckPeriod;
+	type RentCheck = RentCheckPeriod;
+	type Currency = Balances;
+	type MinimumDepositVote = MinimumDeposit;
+	type RepFees = JudgementFee;
+	type Guaranty = GuarantyCoefficient;
+	type ContractLength = ContractLength;
+	type RoR = RoR;
+	type Lease = Lease;
+	type Maintenance = Maintenance;
 	type WeightInfo = ();
+}
+
+impl pallet_finalizer::Config for Runtime {
+	type Event = Event;
+	type WeightInfo = pallet_finalizer::weights::SubstrateWeight<Runtime>;
+}
+
+
+impl pallet_tenancy::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type WeightInfo = pallet_tenancy::weights::SubstrateWeight<Runtime>;
+}
+
+pub struct PaymentsDisputeResolver;
+impl pallet_payment::DisputeResolver<AccountId> for PaymentsDisputeResolver {
+	fn get_resolver_account() -> AccountId {
+		Sudo::key().expect("Sudo key not set!")
+	}
+}
+
+pub struct PaymentsFeeHandler;
+impl pallet_payment::FeeHandler<Runtime> for PaymentsFeeHandler {
+	fn apply_fees(
+		_from: &AccountId,
+		_to: &AccountId,
+		_detail: &pallet_payment::PaymentDetail<Runtime>,
+		_remark: Option<&[u8]>,
+	) -> (AccountId, Percent) {
+		// we do not charge any fee
+		const MARKETPLACE_FEE_PERCENT: Percent = Percent::from_percent(0);
+		let fee_receiver = Sudo::key().expect("Sudo key not set!");
+		(fee_receiver, MARKETPLACE_FEE_PERCENT)
+	}
+}
+
+parameter_types! {
+	pub const IncentivePercentage: Percent = Percent::from_percent(5);
+	pub const MaxRemarkLength: u32 = 10;
+	// 1hr buffer period (60*60)/12
+	pub const CancelBufferBlockLength: BlockNumber = 300;
+	pub const MaxScheduledTaskListLength : u32 = 5;
+}
+
+impl pallet_payment::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type DisputeResolver = PaymentsDisputeResolver;
+	type IncentivePercentage = IncentivePercentage;
+	type FeeHandler = PaymentsFeeHandler;
+	type MaxRemarkLength = MaxRemarkLength;
+	type CancelBufferBlockLength = CancelBufferBlockLength;
+	type MaxScheduledTaskListLength = MaxScheduledTaskListLength;
+	type WeightInfo = pallet_payment::weights::SubstrateWeight<Runtime>;
 }
 
 // flag add pallet config
@@ -642,6 +777,8 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		Uniques: pallet_uniques,
 		Sudo: pallet_sudo,
+		Identity: pallet_identity,
+		Utility: pallet_utility,
 		RoleModule: pallet_roles,
 		HousingFundModule: pallet_housing_fund,
 		NftModule: pallet_nft,
@@ -656,6 +793,9 @@ construct_runtime!(
 		Assets:pallet_assets,
 		BiddingModule: pallet_bidding,
 		AssetManagementModule: pallet_asset_management,
+		FinalizerModule: pallet_finalizer,
+		TenancyModule: pallet_tenancy,
+		PaymentModule: pallet_payment,
 		// flag add pallet runtime
 	}
 );
@@ -706,7 +846,11 @@ mod benches {
 		[pallet_nft, NftModule]
 		[pallet_onboarding, OnboardingModule]
 		[pallet_share_distributor,ShareDistributor]
+		[pallet_identity, Identity]
+		[pallet_utility, Utility]
 		//[pallet_asset_management, AssetManagementModule]
+		// [pallet_finalizer, FinalizerModule]
+		//[pallet_tenancy, TenancyModule]
 		// flag add pallet bench_macro
 	);
 }
@@ -911,6 +1055,8 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_onboarding, OnboardingModule);
 			add_benchmark!(params, batches, pallet_share_distributor, ShareDistributor);
 			//add_benchmark!(params, batches, pallet_asset_management, AssetManagementModule);
+			// add_benchmark!(params, batches, pallet_finalizer, FinalizerModule);
+			//add_benchmark!(params, batches, pallet_tenancy, TenancyModule);
 			// flag add pallet benchmark
 
 			Ok(batches)

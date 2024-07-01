@@ -26,21 +26,16 @@ pub type BlockNumberOf<T> = <T as frame_system::Config>::BlockNumber;
 pub type Idle<T> = (Vec<HouseSeller<T>>, Vec<Servicer<T>>);
 
 ///This enum contains the roles selectable at account creation
-#[derive(Clone, Encode, Decode, PartialEq, Eq, TypeInfo, Copy)]
+#[derive(Clone, Encode, Decode, Default, PartialEq, Eq, TypeInfo, Copy)]
 #[cfg_attr(feature = "std", derive(Debug, Serialize, Deserialize))]
 pub enum Accounts {
 	INVESTOR,
+	#[default]
 	SELLER,
 	TENANT,
 	SERVICER,
 	NOTARY,
 	REPRESENTATIVE,
-}
-
-impl Default for Accounts {
-	fn default() -> Self {
-		Accounts::SELLER
-	}
 }
 
 //-------------------------------------------------------------------------------------
@@ -101,11 +96,13 @@ where
 		let now = <frame_system::Pallet<T>>::block_number();
 		ensure!(!HouseSellerLog::<T>::contains_key(&caller), Error::<T>::NoneValue);
 
-		let hw = HouseSeller { account_id: caller, age: now, activated: false, verifier: admin };
+		let hw =
+			HouseSeller { account_id: caller.clone(), age: now, activated: false, verifier: admin };
 
 		SellerApprovalList::<T>::mutate(|list| {
 			list.push(hw);
 		});
+		RequestedRoles::<T>::insert(caller, Accounts::SELLER);
 
 		Ok(())
 	}
@@ -125,12 +122,26 @@ pub struct Tenant<T: Config> {
 	pub account_id: T::AccountId,
 	pub rent: BalanceOf<T>,
 	pub age: BlockNumberOf<T>,
+	pub asset_account: Option<T::AccountId>,
+	pub contract_start: BlockNumberOf<T>,
+	pub remaining_rent: BalanceOf<T>,
+	pub remaining_payments: u8,
+	pub registered: bool,
 }
 impl<T: Config> Tenant<T> {
 	pub fn new(acc: OriginFor<T>) -> DispatchResult {
 		let caller = ensure_signed(acc)?;
 		let now = <frame_system::Pallet<T>>::block_number();
-		let tenant = Tenant { account_id: caller.clone(), rent: Zero::zero(), age: now };
+		let tenant = Tenant {
+			account_id: caller.clone(),
+			rent: Zero::zero(),
+			age: now,
+			asset_account: None,
+			contract_start: now,
+			remaining_rent: Zero::zero(),
+			remaining_payments: 0,
+			registered: false,
+		};
 		TenantLog::<T>::insert(caller, &tenant);
 		Ok(())
 	}
@@ -154,11 +165,13 @@ impl<T: Config> Servicer<T> {
 		let caller = ensure_signed(acc)?;
 		let admin = SUDO::Pallet::<T>::key().unwrap();
 		let now = <frame_system::Pallet<T>>::block_number();
-		let sv = Servicer { account_id: caller, age: now, activated: false, verifier: admin };
+		let sv =
+			Servicer { account_id: caller.clone(), age: now, activated: false, verifier: admin };
 
 		ServicerApprovalList::<T>::mutate(|list| {
 			list.push(sv);
 		});
+		RequestedRoles::<T>::insert(caller, Accounts::SERVICER);
 		Ok(())
 	}
 }
@@ -176,6 +189,7 @@ pub struct Representative<T: Config> {
 	pub age: BlockNumberOf<T>,
 	pub activated: bool,
 	pub assets_accounts: Vec<T::AccountId>,
+	pub index: u32,
 }
 impl<T: Config> Representative<T>
 where
@@ -186,19 +200,20 @@ where
 	pub fn new(acc: OriginFor<T>) -> DispatchResult {
 		let caller = ensure_signed(acc)?;
 		let now = <frame_system::Pallet<T>>::block_number();
-		ensure!(!RepresentativeLog::<T>::contains_key(&caller), Error::<T>::NoneValue);
 
-		let rep = Representative {
-			account_id: caller.clone(),
-			age: now,
-			activated: false,
-			assets_accounts: Vec::new(),
-		};
-
-		RepApprovalList::<T>::mutate(caller,|val| {
-			//val.push(rep);
-			*val=Some(rep);
-		});
+		if !RepresentativeLog::<T>::contains_key(&caller) {
+			let rep = Representative::<T> {
+				account_id: caller.clone(),
+				age: now,
+				activated: false,
+				assets_accounts: Vec::new(),
+				index: Default::default(),
+			};
+			RepApprovalList::<T>::insert(caller, rep);
+		} else {
+			let rep = RepresentativeLog::<T>::get(&caller).unwrap();
+			RepApprovalList::<T>::insert(caller, rep);
+		}
 
 		Ok(())
 	}
@@ -232,10 +247,12 @@ where
 		ensure!(!NotaryLog::<T>::contains_key(&caller), Error::<T>::NoneValue);
 
 		let admin = SUDO::Pallet::<T>::key().unwrap();
-		let notary = Notary { account_id: caller, age: now, activated: false, verifier: admin };
+		let notary =
+			Notary { account_id: caller.clone(), age: now, activated: false, verifier: admin };
 		NotaryApprovalList::<T>::mutate(|list| {
 			list.push(notary);
 		});
+		RequestedRoles::<T>::insert(caller, Accounts::NOTARY);
 
 		Ok(())
 	}

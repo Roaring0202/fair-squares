@@ -19,6 +19,8 @@ pub fn prep_roles() {
 	RoleModule::account_approval(Origin::signed(ALICE), ACCOUNT_WITH_NO_BALANCE0).ok();
 }
 
+pub const MAX_TENANTS:u8 = 3;
+
 #[test]
 fn create_proposal() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -40,12 +42,15 @@ fn create_proposal() {
 			NftColl::OFFICESTEST,
 			Some(price),
 			metadata1,
-			false
+			false,
+			MAX_TENANTS
 		));
 
 		let coll_id = NftColl::OFFICESTEST.value();
 		let item_id = pallet_nft::ItemsCount::<Test>::get()[coll_id as usize] - 1;
 		let status: AssetStatus = Houses::<Test>::get(coll_id, item_id).unwrap().status;
+
+		assert!(Houses::<Test>::get(coll_id, item_id).unwrap().representative.is_none());
 
 		expect_events(vec![
 			crate::Event::ProposalCreated {
@@ -119,7 +124,8 @@ fn create_proposal_2() {
 			NftColl::OFFICESTEST,
 			Some(price),
 			metadata1,
-			true
+			true,
+			MAX_TENANTS
 		));
 
 		let coll_id = NftColl::OFFICESTEST.value();
@@ -189,7 +195,8 @@ fn proposal_rejections() {
 			NftColl::OFFICESTEST,
 			Some(price0),
 			metadata1,
-			true
+			true,
+			MAX_TENANTS
 		));
 		let coll_id = NftColl::OFFICESTEST.value();
 		let item_id0 = pallet_nft::ItemsCount::<Test>::get()[coll_id as usize] - 1;
@@ -205,7 +212,8 @@ fn proposal_rejections() {
 			NftColl::OFFICESTEST,
 			Some(price1),
 			metadata2,
-			true
+			true,
+			MAX_TENANTS
 		));
 		let item_id1 = pallet_nft::ItemsCount::<Test>::get()[coll_id as usize] - 1;
 		let status_1: AssetStatus = Houses::<Test>::get(coll_id, item_id0).unwrap().status;
@@ -255,10 +263,10 @@ fn proposal_rejections() {
 
 		// Bob reserved funds are 100% slashed
 		let diff = initial_balance - balance0;
-		let res0 = OnboardingModule::balance_to_u64_option(price1).unwrap();
+		//let res0 = OnboardingModule::balance_to_u64_option(price1).unwrap();
 		let perc = 5;
-		let res1 = perc * res0 / 100;
-		let reserved = OnboardingModule::u64_to_balance_option(res1).unwrap();
+		let reserved = perc * price1 / 100;
+		//let reserved = OnboardingModule::u64_to_balance_option(res1).unwrap();
 		assert_eq!(diff, reserved);
 		let fees_balance2 = <Test as pallet_uniques::Config>::Currency::total_balance(
 			&OnboardingModule::account_id(),
@@ -292,7 +300,8 @@ fn get_onboarded_houses_no_onboarded_houses() {
 			NftColl::OFFICESTEST,
 			Some(100_000_000),
 			metadata1,
-			false
+			false,
+			MAX_TENANTS
 		));
 
 		let onboarded_houses = OnboardingModule::get_onboarded_houses();
@@ -323,7 +332,8 @@ fn get_onboarded_houses_with_onboarded_houses() {
 			NftColl::OFFICESTEST,
 			Some(price),
 			metadata1,
-			false
+			false,
+			MAX_TENANTS
 		));
 
 		let collection_id = NftColl::OFFICESTEST.value();
@@ -344,7 +354,8 @@ fn get_onboarded_houses_with_onboarded_houses() {
 			NftColl::OFFICESTEST,
 			Some(price2),
 			metadata2,
-			false
+			false,
+			MAX_TENANTS
 		));
 
 		// we check that the onboarded house is correctly retrieved
@@ -379,7 +390,8 @@ fn get_finalised_houses_no_finalised_houses() {
 			NftColl::OFFICESTEST,
 			Some(100_000_000),
 			metadata1,
-			false
+			false,
+			MAX_TENANTS
 		));
 
 		let finalised_houses = OnboardingModule::get_finalised_houses();
@@ -410,18 +422,19 @@ fn get_finalised_houses_with_finalised_houses() {
 			NftColl::OFFICESTEST,
 			Some(price),
 			metadata1,
-			false
+			false,
+			MAX_TENANTS
 		));
 
 		let collection_id = NftColl::OFFICESTEST.value();
 		let item_id = pallet_nft::ItemsCount::<Test>::get()[collection_id as usize] - 1;
 
-		// we simulate for the the presence of an finalised house by changing its status
+		// we simulate for the the presence of a finalised house by changing its status
 		assert_ok!(OnboardingModule::change_status(
 			Origin::signed(BOB),
 			NftColl::OFFICESTEST,
 			item_id,
-			AssetStatus::FINALISED,
+			AssetStatus::FINALISED
 		));
 
 		let price2 = 200_000_000;
@@ -431,15 +444,106 @@ fn get_finalised_houses_with_finalised_houses() {
 			NftColl::OFFICESTEST,
 			Some(price2),
 			metadata2,
-			false
+			false,
+			MAX_TENANTS
 		));
 
-		// we check that the onboarded house is correctly retrieved
+		// we check that the finalised house is correctly retrieved
 		let finalised_houses = OnboardingModule::get_finalised_houses();
 		assert_eq!(finalised_houses.len(), 1);
 
 		let house = finalised_houses[0].clone();
 		assert_eq!(house.2.status, AssetStatus::FINALISED,);
 		assert_eq!(house.2.price, Some(price),);
+	});
+}
+
+#[test]
+fn get_finalising_houses_no_finalising_houses() {
+	ExtBuilder::default().build().execute_with(|| {
+		let metadata0: BoundedVec<u8, <Test as pallet_uniques::Config>::StringLimit> =
+			b"metadata0".to_vec().try_into().unwrap();
+		let metadata1: BoundedVec<u8, <Test as pallet_uniques::Config>::StringLimit> =
+			b"metadata1".to_vec().try_into().unwrap();
+
+		prep_roles();
+
+		//Charlie creates a collection
+		assert_ok!(NftModule::create_collection(
+			Origin::signed(CHARLIE),
+			NftColl::OFFICESTEST,
+			metadata0
+		));
+		// Bob creates a proposal without submiting for review
+		assert_ok!(OnboardingModule::create_and_submit_proposal(
+			Origin::signed(BOB),
+			NftColl::OFFICESTEST,
+			Some(100_000_000),
+			metadata1,
+			false,
+			MAX_TENANTS
+		));
+
+		let finalising_houses = OnboardingModule::get_finalising_houses();
+		assert_eq!(finalising_houses.len(), 0);
+	});
+}
+
+#[test]
+fn get_finalising_houses_with_finalising_houses() {
+	ExtBuilder::default().build().execute_with(|| {
+		let metadata0: BoundedVec<u8, <Test as pallet_uniques::Config>::StringLimit> =
+			b"metadata0".to_vec().try_into().unwrap();
+		let metadata1: BoundedVec<u8, <Test as pallet_uniques::Config>::StringLimit> =
+			b"metadata1".to_vec().try_into().unwrap();
+		let metadata2: BoundedVec<u8, <Test as pallet_uniques::Config>::StringLimit> =
+			b"metadata1".to_vec().try_into().unwrap();
+		prep_roles();
+		//Charlie creates a collection
+		assert_ok!(NftModule::create_collection(
+			Origin::signed(CHARLIE),
+			NftColl::OFFICESTEST,
+			metadata0
+		));
+		// Bob creates a proposal without submiting for review
+		let price = 100_000_000;
+		assert_ok!(OnboardingModule::create_and_submit_proposal(
+			Origin::signed(BOB),
+			NftColl::OFFICESTEST,
+			Some(price),
+			metadata1,
+			false,
+			MAX_TENANTS
+		));
+
+		let collection_id = NftColl::OFFICESTEST.value();
+		let item_id = pallet_nft::ItemsCount::<Test>::get()[collection_id as usize] - 1;
+
+		// we simulate for the the presence of a finalising house by changing its status
+		assert_ok!(OnboardingModule::change_status(
+			Origin::signed(BOB),
+			NftColl::OFFICESTEST,
+			item_id,
+			AssetStatus::FINALISING
+		));
+
+		let price2 = 200_000_000;
+		// we add a new asset that won't have the FINALISING status
+		assert_ok!(OnboardingModule::create_and_submit_proposal(
+			Origin::signed(BOB),
+			NftColl::OFFICESTEST,
+			Some(price2),
+			metadata2,
+			false,
+			MAX_TENANTS
+		));
+
+		// we check that the finalising house is correctly retrieved
+		let finalising_houses = OnboardingModule::get_finalising_houses();
+		assert_eq!(finalising_houses.len(), 1);
+
+		let house = finalising_houses[0].clone();
+		assert_eq!(house.2.status, AssetStatus::FINALISING);
+		assert_eq!(house.2.price, Some(price));
 	});
 }

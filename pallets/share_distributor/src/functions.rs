@@ -29,6 +29,10 @@ impl<T: Config> Pallet<T> {
 		//Onboarding pallet.
 		let fees_account = Onboarding::Pallet::<T>::account_id();
 		let fees = T::Fees::get();
+		//Ensure that we have enough money in the fees_account
+		let balance = <T as pallet::Config>::Currency::free_balance(&fees_account);
+		ensure!(fees < balance, Error::<T>::NotEnoughFees);
+
 		let res = <T as pallet::Config>::Currency::transfer(
 			&fees_account,
 			&account,
@@ -79,8 +83,8 @@ impl<T: Config> Pallet<T> {
 
 		let mut vec = Vec::new();
 		for i in vec0.iter() {
-			let price0 = Self::balance_to_u128_option0(price).unwrap();
-			let contribution0 = Self::balance_to_u128_option0(i.1).unwrap();
+			let price0 = Self::hfund_bal_to_u128(price).unwrap();
+			let contribution0 = Self::hfund_bal_to_u128(i.1).unwrap();
 
 			let price1 = Self::balance_to_f64_option0(price).unwrap();
 			let contribution1 = Self::balance_to_f64_option0(i.1).unwrap();
@@ -141,13 +145,8 @@ impl<T: Config> Pallet<T> {
 		debug_assert!(res.is_ok());
 
 		//Set class metadata
-		let token_name = format!("FairOwner_nbr{:?}", token_id.clone())
-			.as_bytes()
-			.to_vec()
-			.try_into()
-			.unwrap();
-		let token_symbol =
-			format!("FO{:?}", token_id.clone()).as_bytes().to_vec().try_into().unwrap();
+		let token_name = format!("FairOwner_nbr{:?}", token_id.clone()).as_bytes().to_vec();
+		let token_symbol = format!("FO{:?}", token_id.clone()).as_bytes().to_vec();
 		let decimals = 1;
 		Assets::Pallet::<T>::force_set_metadata(
 			origin,
@@ -219,11 +218,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	// Conversion of BalanceOf<T> to u128
-	pub fn balance_to_u128_option0(input: HousingFund::BalanceOf<T>) -> Option<u128> {
-		input.try_into().ok()
-	}
-	// Conversion of BalanceOf<T> to u128
-	pub fn balance_to_u128_option(input: <T as Assets::Config>::Balance) -> Option<u128> {
+	pub fn hfund_bal_to_u128(input: HousingFund::BalanceOf<T>) -> Option<u128> {
 		input.try_into().ok()
 	}
 
