@@ -159,6 +159,13 @@ pub mod pallet {
 			Self::process_finalised_assets()
 		}
 	}
+
+	pub fn unreserve(&mut self, amount: BalanceOf<T>) {
+		// remove the amount to reserved
+		self.reserved -= amount;
+		// add the amount to transferable
+		self.transferable += amount;
+	}
 }
 
 use enum_iterator::all;
