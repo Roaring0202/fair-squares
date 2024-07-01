@@ -4188,6 +4188,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-bidding"
+version = "4.0.0-dev"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-collective",
+ "pallet-democracy",
+ "pallet-housing_fund",
+ "pallet-nft",
+ "pallet-onboarding",
+ "pallet-roles",
+ "pallet-scheduler",
+ "pallet-sudo",
+ "pallet-uniques",
+ "pallet-voting",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-collective"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.29#cc370aa61e15c18d23a2f686b812fd576a630afe"
