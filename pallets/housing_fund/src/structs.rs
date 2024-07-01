@@ -46,7 +46,8 @@ impl<T: Config> FundInfo<T> {
 
 	pub fn can_take_off(&self, amount: BalanceOf<T>) -> bool {
 		// check that amount to take off if inferior to the transferable
-		self.transferable > T::FundThreshold::get() && amount <= self.transferable - T::FundThreshold::get()
+		self.transferable > T::FundThreshold::get() &&
+			amount <= self.transferable - T::FundThreshold::get()
 	}
 
 	// Withdraw from the tranferable
@@ -62,6 +63,19 @@ impl<T: Config> FundInfo<T> {
 		self.transferable -= amount;
 		// add the amount to reserved
 		self.reserved += amount;
+	}
+
+	pub fn unreserve(&mut self, amount: BalanceOf<T>) {
+		// remove the amount from reserved
+		self.reserved -= amount;
+		// add the amount to transferable
+		self.transferable += amount;
+	}
+
+	pub fn use_reserved(&mut self, amount: BalanceOf<T>) {
+		// remove the amount from reserved
+		self.reserved -= amount;
+		self.total -= amount;
 	}
 }
 
@@ -113,6 +127,11 @@ impl<T: Config> Contribution<T> {
 	pub fn unreserve_amount(&mut self, amount: BalanceOf<T>) {
 		self.reserved_balance -= amount;
 		self.available_balance += amount;
+	}
+
+	pub fn use_reserved_amount(&mut self, amount: BalanceOf<T>) {
+		self.reserved_balance -= amount;
+		self.contributed_balance += amount;
 	}
 }
 

@@ -10,7 +10,6 @@ use frame_system::{EnsureRoot, EnsureSigned};
 use pallet_collective::PrimeDefaultVote;
 use pallet_roles::GenesisBuild;
 
-use frame_system;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -47,7 +46,7 @@ parameter_types! {
 	pub const MotionDuration: u64 = 2;
 	pub const MaxProposals: u32 = 100;
 	pub BlockWeights: frame_system::limits::BlockWeights =
-		frame_system::limits::BlockWeights::simple_max(1024);
+		frame_system::limits::BlockWeights::simple_max(Weight::from_ref_time(1024_u64));
 }
 
 impl frame_system::Config for Test {

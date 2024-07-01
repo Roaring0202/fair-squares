@@ -33,18 +33,18 @@ mod functions;
 mod structs;
 
 pub use crate::structs::*;
-pub use pallet_roles as ROLES;
 pub use pallet_nft as NFT;
+pub use pallet_roles as ROLES;
 pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
 	use frame_support::{
-		sp_runtime::traits::AccountIdConversion,
-		traits::{Currency, ExistenceRequirement, Get, ReservableCurrency},
+		traits::{Currency, ExistenceRequirement, Get},
 		transactional, PalletId,
 	};
+	//use frame_system::WeightInfo;
 	use sp_std::vec;
 
 	pub const PERCENT_FACTOR: u64 = 100000;
@@ -87,20 +87,30 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn contributions)]
 	// Distribution of investor's contributions
-	pub(super) type Contributions<T> =
+	pub type Contributions<T> =
 		StorageMap<_, Blake2_128Concat, AccountIdOf<T>, Contribution<T>, OptionQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn reservations)]
 	// Housing fund reservations
-	pub type Reservations<T> =
-		StorageMap<_, Blake2_128Concat, (NftCollectionId<T>, NftItemId<T>), FundOperation<T>, OptionQuery>;
+	pub type Reservations<T> = StorageMap<
+		_,
+		Blake2_128Concat,
+		(NftCollectionId<T>, NftItemId<T>),
+		FundOperation<T>,
+		OptionQuery,
+	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn purchases)]
 	// Housing fund used for purchases
-	pub(super) type Purchases<T> =
-		StorageMap<_, Blake2_128Concat, StorageIndex, FundOperation<T>, OptionQuery>;
+	pub(super) type Purchases<T> = StorageMap<
+		_,
+		Blake2_128Concat,
+		(NftCollectionId<T>, NftItemId<T>),
+		FundOperation<T>,
+		OptionQuery,
+	>;
 
 	// Pallets use events to inform users when important changes are made.
 	#[pallet::event]
@@ -117,6 +127,9 @@ pub mod pallet {
 		),
 		/// Fund reservation succeded
 		FundReservationSucceeded(T::NftCollectionId, T::NftItemId, BalanceOf<T>, BlockNumberOf<T>),
+		FundReservationCancelled(T::NftCollectionId, T::NftItemId, BalanceOf<T>, BlockNumberOf<T>),
+		PurchaseFundValidated(T::NftCollectionId, T::NftItemId, BalanceOf<T>, BlockNumberOf<T>),
+		FundUnreservedForPurchase(T::NftCollectionId, T::NftItemId, BalanceOf<T>, BlockNumberOf<T>),
 	}
 
 	// Errors inform users that something went wrong.
@@ -144,6 +157,8 @@ pub mod pallet {
 		NotAnInvestor,
 		/// Must not have more investor than the max acceppted
 		NotMoreThanMaxInvestorPerHouse,
+		/// The reservation doesn't exist in the storage
+		NoFundReservationFound,
 	}
 
 	#[pallet::call]
@@ -199,20 +214,17 @@ pub mod pallet {
 				Contributions::<T>::insert(&who, contribution);
 			} else {
 				Contributions::<T>::mutate(&who, |val| {
-					let unwrap_val = val.clone().unwrap();
-					let mut contribution_logs = unwrap_val.contributions.clone();
+					let old_contrib = val.clone().unwrap();
+					let mut contribution_logs = old_contrib.contributions.clone();
 					// update the contributions history
 					contribution_logs.push(contribution_log.clone());
 
 					let new_contrib = Contribution {
 						account_id: who.clone(),
-						available_balance: unwrap_val.available_balance + amount,
-						reserved_balance: unwrap_val.reserved_balance,
-						contributed_balance: unwrap_val.contributed_balance,
-						has_withdrawn: unwrap_val.has_withdrawn,
+						available_balance: old_contrib.available_balance + amount,
 						block_number,
 						contributions: contribution_logs,
-						withdraws: Vec::new(),
+						..old_contrib
 					};
 					*val = Some(new_contrib);
 				});
@@ -281,21 +293,17 @@ pub mod pallet {
 			let withdraw_log = ContributionLog { amount, block_number };
 
 			Contributions::<T>::mutate(&who, |val| {
-				let unwrap_val = val.clone().unwrap();
-				let contribution_logs = unwrap_val.contributions.clone();
-				let mut withdraw_logs = unwrap_val.withdraws.clone();
+				let old_contrib = val.clone().unwrap();
+				let mut withdraw_logs = old_contrib.withdraws.clone();
 				// update the withdraws history
 				withdraw_logs.push(withdraw_log.clone());
 
 				let new_contrib = Contribution {
-					account_id: who.clone(),
-					available_balance: unwrap_val.available_balance - amount,
-					reserved_balance: unwrap_val.reserved_balance,
-					contributed_balance: unwrap_val.contributed_balance,
+					available_balance: old_contrib.available_balance - amount,
 					has_withdrawn: true,
 					block_number,
-					contributions: contribution_logs,
 					withdraws: withdraw_logs.clone(),
+					..old_contrib
 				};
 				*val = Some(new_contrib);
 			});

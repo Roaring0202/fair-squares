@@ -2,11 +2,11 @@ use super::*;
 use crate as pallet_housing_fund;
 use frame_support::{
 	parameter_types,
-	traits::{ConstU16, ConstU64, AsEnsureOriginWithArg},
+	traits::{AsEnsureOriginWithArg, ConstU16, ConstU64},
 	PalletId,
 };
 use frame_system::EnsureRoot;
-use sp_core::{crypto::AccountId32, H256};
+use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -19,7 +19,6 @@ pub(crate) type Balance = u128;
 type AccountId = u64;
 pub type CollectionId = u32;
 pub type ItemId = u32;
-pub type NftCollection = crate::NFT::PossibleCollections;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -137,7 +136,7 @@ impl pallet_housing_fund::Config for Test {
 	type MinContribution = MinContribution;
 	type FundThreshold = FundThreshold;
 	type MaxFundContribution = MaxFundContribution;
-	type WeightInfo = pallet_housing_fund::weights::SubstrateWeight<Test>;
+	type WeightInfo = ();
 	type PalletId = HousingFundPalletId;
 	type MaxInvestorPerHouse = MaxInvestorPerHouse;
 }
