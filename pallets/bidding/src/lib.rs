@@ -163,6 +163,7 @@ pub mod pallet {
 
 use enum_iterator::all;
 use frame_support::pallet_prelude::*;
+use enum_iterator::all;
 
 impl<T: Config> Pallet<T> {
 	fn begin_block(now: T::BlockNumber) -> Weight {
@@ -298,20 +299,6 @@ impl<T: Config> Pallet<T> {
 						let value: T::NftCollectionId = item.value().into();
 						if value == collection_id {
 							possible_collection = *item;
-							break
-						}
-					}
-
-					let owner: T::AccountId =
-						Nft::Pallet::<T>::owner(collection_id, item_id).unwrap();
-
-					Onboarding::Pallet::<T>::change_status(
-						frame_system::RawOrigin::Signed(owner).into(),
-						possible_collection,
-						item_id,
-						Onboarding::AssetStatus::FINALISING,
-					)
-					.ok();
 				},
 				Err(_e) => {
 					Self::deposit_event(Event::HouseBiddingFailed(
