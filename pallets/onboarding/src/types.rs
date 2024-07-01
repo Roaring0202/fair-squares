@@ -21,6 +21,7 @@ pub enum AssetStatus {
 	PURCHASED,
 	REJECTED,
 	SLASH,
+	CANCELLED,
 }
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, RuntimeDebugNoBound, TypeInfo)]
@@ -28,13 +29,21 @@ pub enum AssetStatus {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct Asset<T: Config> {
 	/// Asset status
-	pub(super) status: AssetStatus,
+	pub status: AssetStatus,
 	/// Asset creation block
 	pub(super) created: BlockNumberOf<T>,
 	/// NFT infos
 	pub(super) infos: ItemInfoOf<T>,
 	/// NFT Price
 	pub price: Option<BalanceOf<T>>,
+	/// Representative
+	pub representative: Option<T::AccountId>,
+	/// Tenants
+	pub tenants: Vec<T::AccountId>,
+	/// Proposal hash
+	pub proposal_hash: T::Hash,
+	/// Maximum number of tenants for this asset
+	pub max_tenants: u8,
 }
 
 impl<T: Config> Asset<T> {
@@ -43,10 +52,20 @@ impl<T: Config> Asset<T> {
 		item: T::NftItemId,
 		infos: ItemInfoOf<T>,
 		price: Option<BalanceOf<T>>,
+		max_tenants: u8
 	) -> DispatchResult {
 		let status = AssetStatus::EDITING;
 		let created = <frame_system::Pallet<T>>::block_number();
-		let house = Asset::<T> { status, created, infos, price };
+		let house = Asset::<T> {
+			status,
+			created,
+			infos,
+			price,
+			representative: None,
+			tenants: Default::default(),
+			proposal_hash: Default::default(),
+			max_tenants,
+		};
 		Houses::<T>::insert(collection, item, house);
 
 		Ok(())
@@ -76,7 +95,7 @@ impl<T: Config> VotingCalls<T> {
 			reject_edit: Box::new(call.clone()),
 			reject_destroy: Box::new(call.clone()),
 			democracy_status: Box::new(call.clone()),
-			after_vote_status: Box::new(call.clone()),
+			after_vote_status: Box::new(call),
 		};
 		Vcalls::<T>::insert(collection, item, calls);
 		Ok(())

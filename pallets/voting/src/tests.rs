@@ -1,8 +1,7 @@
 use crate::{mock::*, Error};
 use codec::Encode;
 use frame_support::{assert_noop, assert_ok};
-use pallet_roles::Hash;
-use pallet_roles::Hooks;
+use pallet_roles::{Hash, Hooks};
 
 fn make_proposal(value: i32) -> Box<Call> {
 	Box::new(Call::System(frame_system::Call::remark { remark: value.encode() }))
@@ -52,38 +51,32 @@ fn submit_proposal_should_succeed() {
 
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
-		assert_eq!(
-			VotingModule::voting_proposals(hash.clone()).is_some(),
-			true
-		);
+		assert!(VotingModule::voting_proposals(hash).is_some());
 
-		let voting_proposal = VotingModule::voting_proposals(hash.clone()).unwrap();
+		let voting_proposal = VotingModule::voting_proposals(hash).unwrap();
 
 		assert_eq!(voting_proposal.account_id, EVE);
-		assert_eq!(voting_proposal.proposal_call, proposal.clone());
+		assert_eq!(voting_proposal.proposal_call, proposal);
 		assert_eq!(voting_proposal.collective_passed_call, make_proposal(2));
 		assert_eq!(voting_proposal.collective_failed_call, make_proposal(3));
 		assert_eq!(voting_proposal.democracy_failed_call, make_proposal(4));
 		assert_eq!(voting_proposal.proposal_hash, hash.clone());
 		assert_eq!(voting_proposal.collective_index, 0);
 		assert_eq!(voting_proposal.democracy_referendum_index, 0);
-		assert_eq!(voting_proposal.collective_step, false);
-		assert_eq!(voting_proposal.proposal_executed, false);
-		assert_eq!(voting_proposal.collective_closed, false);
+		assert!(!voting_proposal.collective_step);
+		assert!(!voting_proposal.proposal_executed);
+		assert!(!voting_proposal.collective_closed);
 
 		let block_number = System::block_number()
 			.saturating_add(<Test as crate::Config>::Delay::get())
 			.saturating_add(<Test as pallet_collective::Config<pallet_collective::Instance1>>::MotionDuration::get());
 
 		assert_eq!(
-			VotingModule::collective_proposals(hash.clone()),
+			VotingModule::collective_proposals(hash),
 			Some(block_number)
 		);
 
-		assert_eq!(
-			VotingModule::democracy_proposals(hash.clone()).is_none(),
-			true
-		);
+		assert!(VotingModule::democracy_proposals(hash).is_none());
 	});
 }
 
@@ -108,7 +101,7 @@ fn council_vote_not_house_council_member_should_fail() {
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
 		assert_noop!(
-			VotingModule::council_vote(Origin::signed(EVE), hash.clone(), true,),
+			VotingModule::council_vote(Origin::signed(EVE), hash, true,),
 			Error::<Test>::NotAHouseCouncilMember
 		);
 	});
@@ -126,7 +119,7 @@ fn council_vote_proposal_not_exist_should_fail() {
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
 		assert_noop!(
-			VotingModule::council_vote(Origin::signed(ALICE), hash.clone(), true,),
+			VotingModule::council_vote(Origin::signed(ALICE), hash, true,),
 			Error::<Test>::ProposalDoesNotExist
 		);
 	});
@@ -152,7 +145,7 @@ fn council_vote_proposal_should_succeed() {
 
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
-		assert_ok!(VotingModule::council_vote(Origin::signed(ALICE), hash.clone(), true,));
+		assert_ok!(VotingModule::council_vote(Origin::signed(ALICE), hash, true,));
 
 		let event = <frame_system::Pallet<Test>>::events()
 			.pop()
@@ -179,7 +172,7 @@ fn council_close_vote_not_house_council_member_should_fail() {
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
 		assert_noop!(
-			VotingModule::council_close_vote(Origin::signed(EVE), hash.clone(),),
+			VotingModule::council_close_vote(Origin::signed(EVE), hash,),
 			Error::<Test>::NotAHouseCouncilMember
 		);
 	});
@@ -197,7 +190,7 @@ fn council_close_vote_proposal_not_exist_should_fail() {
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
 		assert_noop!(
-			VotingModule::council_close_vote(Origin::signed(ALICE), hash.clone(),),
+			VotingModule::council_close_vote(Origin::signed(ALICE), hash,),
 			Error::<Test>::ProposalDoesNotExist
 		);
 	});
@@ -239,29 +232,26 @@ fn council_close_vote_proposal_not_pass_should_succeed() {
 			.saturating_add(<Test as pallet_collective::Config<pallet_collective::Instance1>>::MotionDuration::get());
 
 		// We advance the time to reach the block number of the ending proposal vote period
-		System::set_block_number(end_block_number.clone());
+		System::set_block_number(end_block_number);
 
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
 		assert_ok!(
 			VotingModule::council_close_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 			)
 		);
 
-		let voting_proposal = VotingModule::voting_proposals(hash.clone()).unwrap();
+		let voting_proposal = VotingModule::voting_proposals(hash).unwrap();
 
-		assert_eq!(voting_proposal.collective_closed, true);
-		assert_eq!(voting_proposal.collective_step, false);
+		assert!(voting_proposal.collective_closed);
+		assert!(!voting_proposal.collective_step);
 
 		// Simulate the regular block check to have the update storage computation
-		VotingModule::begin_block(end_block_number.clone() + 1);
+		VotingModule::begin_block(end_block_number + 1);
 
-		assert_eq!(
-			VotingModule::collective_proposals(hash.clone()).is_none(),
-			true
-		);
+		assert!(VotingModule::collective_proposals(hash).is_none());
 
 		let event = <frame_system::Pallet<Test>>::events()
 			.pop()
@@ -310,7 +300,7 @@ fn council_close_vote_proposal_pass_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -318,7 +308,7 @@ fn council_close_vote_proposal_pass_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(BOB),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -326,7 +316,7 @@ fn council_close_vote_proposal_pass_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(CHARLIE),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -338,34 +328,31 @@ fn council_close_vote_proposal_pass_should_succeed() {
 			.saturating_add(<Test as pallet_collective::Config<pallet_collective::Instance1>>::MotionDuration::get());
 
 		// We advance the time to reach the block number of the ending proposal vote period
-		System::set_block_number(end_block_number.clone());
+		System::set_block_number(end_block_number);
 
 		assert_ok!(
 			VotingModule::council_close_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 			)
 		);
 
-		let voting_proposal = VotingModule::voting_proposals(hash.clone()).unwrap();
+		let voting_proposal = VotingModule::voting_proposals(hash).unwrap();
 
-		assert_eq!(voting_proposal.collective_closed, true);
-		assert_eq!(voting_proposal.collective_step, true);
+		assert!(voting_proposal.collective_closed);
+		assert!(voting_proposal.collective_step);
 
 		// Simulate the regular block check to have the update storage computation
-		VotingModule::begin_block(end_block_number.clone() + 1);
+		VotingModule::begin_block(end_block_number + 1);
 
-		assert_eq!(
-			VotingModule::collective_proposals(hash.clone()).is_none(),
-			true
-		);
+		assert!(VotingModule::collective_proposals(hash).is_none());
 
 		let end_democracy_vote = end_block_number
 			.saturating_add(<Test as crate::Config>::Delay::get())
 			.saturating_add(<Test as pallet_democracy::Config>::VotingPeriod::get());
 
 		assert_eq!(
-			VotingModule::democracy_proposals(hash.clone()),
+			VotingModule::democracy_proposals(hash),
 			Some(end_democracy_vote)
 		);
 
@@ -384,7 +371,7 @@ fn council_close_vote_proposal_pass_should_succeed() {
 }
 
 #[test]
-fn investor_vote_without_having_invetsor_role_should_fail() {
+fn investor_vote_without_having_investor_role_should_fail() {
 	new_test_ext().execute_with(|| {
 		// Give the investor role to the account
 		assert_ok!(RoleModule::set_role(Origin::signed(EVE), EVE, crate::ROLES::Accounts::SELLER));
@@ -404,7 +391,7 @@ fn investor_vote_without_having_invetsor_role_should_fail() {
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
 		assert_noop!(
-			VotingModule::investor_vote(Origin::signed(ALICE), hash.clone(), true,),
+			VotingModule::investor_vote(Origin::signed(ALICE), hash, true,),
 			Error::<Test>::NotAnInvestor
 		);
 	});
@@ -427,7 +414,7 @@ fn investor_vote_with_bad_proposal_should_fail() {
 		let hash = <Test as frame_system::Config>::Hashing::hash_of(&proposal);
 
 		assert_noop!(
-			VotingModule::investor_vote(Origin::signed(ALICE), hash.clone(), true,),
+			VotingModule::investor_vote(Origin::signed(ALICE), hash, true,),
 			Error::<Test>::ProposalDoesNotExist
 		);
 	});
@@ -459,7 +446,7 @@ fn investor_vote_should_succeed() {
 		assert_ok!(
 			VotingModule::submit_proposal(
 				Origin::signed(EVE),
-				proposal.clone(),
+				proposal,
 				make_proposal(2),
 				make_proposal(3),
 				make_proposal(4)
@@ -469,7 +456,7 @@ fn investor_vote_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -477,7 +464,7 @@ fn investor_vote_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(BOB),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -485,7 +472,7 @@ fn investor_vote_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(CHARLIE),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -497,23 +484,23 @@ fn investor_vote_should_succeed() {
 			.saturating_add(<Test as pallet_collective::Config<pallet_collective::Instance1>>::MotionDuration::get());
 
 		// We advance the time to reach the block number of the ending proposal vote period
-		System::set_block_number(end_block_number.clone());
+		System::set_block_number(end_block_number);
 
 		assert_ok!(
 			VotingModule::council_close_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 			)
 		);
 
 		// Simulate the regular block check to have the update storage computation
-		VotingModule::begin_block(end_block_number.clone() + 1);
-		System::set_block_number(end_block_number.clone() + 1);
+		VotingModule::begin_block(end_block_number + 1);
+		System::set_block_number(end_block_number + 1);
 
 		assert_ok!(
 			VotingModule::investor_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -557,7 +544,7 @@ fn investor_vote_proposal_fail_should_succeed() {
 		assert_ok!(
 			VotingModule::submit_proposal(
 				Origin::signed(EVE),
-				proposal.clone(),
+				proposal,
 				make_proposal(2),
 				make_proposal(3),
 				make_proposal(4)
@@ -567,7 +554,7 @@ fn investor_vote_proposal_fail_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -575,7 +562,7 @@ fn investor_vote_proposal_fail_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(BOB),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -583,7 +570,7 @@ fn investor_vote_proposal_fail_should_succeed() {
 		assert_ok!(
 			VotingModule::council_vote(
 				Origin::signed(CHARLIE),
-				hash.clone(),
+				hash,
 				true,
 			)
 		);
@@ -595,24 +582,24 @@ fn investor_vote_proposal_fail_should_succeed() {
 			.saturating_add(<Test as pallet_collective::Config<pallet_collective::Instance1>>::MotionDuration::get());
 
 		// We advance the time to reach the block number of the ending proposal vote period
-		System::set_block_number(end_block_number.clone());
+		System::set_block_number(end_block_number);
 
 		assert_ok!(
 			VotingModule::council_close_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 			)
 		);
 
 		// Simulate the regular block check to have the update storage computation
-		VotingModule::begin_block(end_block_number.clone() + 1);
-		Democracy::on_initialize(end_block_number.clone() + 1);
-		System::set_block_number(end_block_number.clone() + 1);
+		VotingModule::begin_block(end_block_number + 1);
+		Democracy::on_initialize(end_block_number + 1);
+		System::set_block_number(end_block_number + 1);
 
 		assert_ok!(
 			VotingModule::investor_vote(
 				Origin::signed(ALICE),
-				hash.clone(),
+				hash,
 				false,
 			)
 		);
@@ -621,12 +608,9 @@ fn investor_vote_proposal_fail_should_succeed() {
 			.saturating_add(<Test as crate::Config>::Delay::get())
 			.saturating_add(<Test as pallet_democracy::Config>::VotingPeriod::get());
 
-		Democracy::on_initialize(end_democracy_vote.clone() + 1);
-		VotingModule::begin_block(end_democracy_vote.clone() + 2);
+		Democracy::on_initialize(end_democracy_vote + 1);
+		VotingModule::begin_block(end_democracy_vote + 2);
 
-		assert_eq!(
-			VotingModule::democracy_proposals(hash.clone()).is_none(),
-			true
-		);
+		assert!(VotingModule::democracy_proposals(hash).is_none());
 	});
 }
