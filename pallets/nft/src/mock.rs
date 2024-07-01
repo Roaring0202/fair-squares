@@ -54,10 +54,6 @@ impl NftPermission<Acc> for NftTestPermissions {
 		matches!(*created_by, Acc::SELLER)
 	}
 
-	fn can_transfer(created_by: &Acc) -> bool {
-		matches!(*created_by, Acc::SERVICER)
-	}
-
 	fn can_burn(created_by: &Acc) -> bool {
 		matches!(*created_by, Acc::SERVICER)
 	}
@@ -113,7 +109,7 @@ impl pallet_uniques::Config for Test {
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
-	pub const MaximumBlockWeight: Weight = 1024;
+	pub const MaximumBlockWeight: Weight = Weight::from_ref_time(1024_u64);
 	pub const MaximumBlockLength: u32 = 2 * 1024;
 	pub const AvailableBlockRatio: Perbill = Perbill::one();
 }

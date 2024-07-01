@@ -1,4 +1,5 @@
 pub use super::*;
+pub use frame_system::{pallet_prelude::OriginFor, RawOrigin};
 
 pub trait CreateTypedCollection<AccountId, CollectionId>: Create<AccountId> {
 	/// This function create an NFT collection of `created_by` type.
@@ -70,6 +71,35 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	pub fn set_metadata(
+		owner: T::AccountId,
+		collection_id: T::NftCollectionId,
+		item_id: T::NftItemId,
+		metadata: BoundedVecOfUnq<T>,
+	) -> DispatchResult {
+		ensure!(Collections::<T>::contains_key(collection_id), Error::<T>::CollectionUnknown);
+		let origin = RawOrigin::Signed(owner);
+
+		let res0 = pallet_uniques::Pallet::<T>::set_metadata(
+			origin.into(),
+			collection_id.into(),
+			item_id.into(),
+			metadata.clone(),
+			false,
+		);
+		debug_assert!(res0.is_ok());
+
+		Items::<T>::mutate(collection_id, item_id, |val| {
+			let mut val0 = val.clone().unwrap();
+			val0.metadata = metadata;
+			*val = Some(val0);
+		});
+
+		//Self::deposit_event(Event::ItemMinted { owner, collection_id, item_id });
+
+		Ok(())
+	}
+
 	pub fn do_transfer(
 		collection_id: T::NftCollectionId,
 		item_id: T::NftItemId,
@@ -77,7 +107,7 @@ impl<T: Config> Pallet<T> {
 		to: T::AccountId,
 	) -> DispatchResult {
 		if from == to {
-			return Ok(());
+			return Ok(())
 		}
 
 		pallet_uniques::Pallet::<T>::do_transfer(
@@ -116,7 +146,8 @@ impl<T: Config> Pallet<T> {
 		let witness = pallet_uniques::Pallet::<T>::get_destroy_witness(&collection_id.into())
 			.ok_or(Error::<T>::CollectionUnknown)?;
 
-		// witness struct is empty because we don't allow destroying a Collection with existing items
+		// witness struct is empty because we don't allow destroying a Collection with existing
+		// items
 		ensure!(witness.items == 0u32, Error::<T>::TokenCollectionNotEmpty);
 
 		pallet_uniques::Pallet::<T>::do_destroy_collection(
@@ -209,7 +240,8 @@ impl<T: Config> Destroy<T::AccountId> for Pallet<T> {
 
 		Self::do_destroy_collection(owner, collection)?;
 
-		// We can return empty struct here because we don't allow destroying a Collection with existing items
+		// We can return empty struct here because we don't allow destroying a Collection with
+		// existing items
 		Ok(DestroyWitness { items: 0, item_metadatas: 0, attributes: 0 })
 	}
 }

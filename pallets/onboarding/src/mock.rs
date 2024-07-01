@@ -1,11 +1,11 @@
 use super::*;
 use crate as pallet_onboarding;
-use frame_support::traits::{
-	AsEnsureOriginWithArg, ConstU16, ConstU32, ConstU64, EqualPrivilegeOnly,
+use frame_support::{
+	parameter_types,
+	traits::{AsEnsureOriginWithArg, ConstU16, ConstU32, ConstU64, EqualPrivilegeOnly},
+	weights::Weight,
+	PalletId,
 };
-use frame_support::PalletId;
-use frame_support::{parameter_types, weights::Weight};
-use frame_system;
 
 use crate::Nft::NftPermissions;
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -17,9 +17,6 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	Perbill,
 };
-
-use pallet_collective;
-use pallet_democracy;
 
 type CouncilCollective = pallet_collective::Instance1;
 type AccountId = AccountId32;
@@ -52,12 +49,13 @@ frame_support::construct_runtime!(
 		Uniques: pallet_uniques::{Pallet, Call, Storage, Event<T>},
 		Collective: pallet_collective::<Instance1>::{Pallet, Call, Event<T>, Origin<T>, Config<T>},
 		Democracy: pallet_democracy::{Pallet, Call, Storage, Config<T>, Event<T>},
+		HousingFund: pallet_housing_fund::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
 parameter_types! {
 	pub BlockWeights: frame_system::limits::BlockWeights =
-		frame_system::limits::BlockWeights::simple_max(1024);
+		frame_system::limits::BlockWeights::simple_max(Weight::from_ref_time(1024_u64));
 }
 
 impl frame_system::Config for Test {
@@ -240,7 +238,8 @@ impl pallet_voting::Config for Test {
 }
 
 parameter_types! {
-	pub const ProposalFee:u64 = 5;
+	pub const ProposalFee:Percent = Percent::from_percent(5);
+	pub const SlashedFee: Percent = Percent::from_percent(10);
 	pub const FeesAccount: PalletId = PalletId(*b"feeslash");
 }
 
@@ -249,6 +248,7 @@ impl pallet_onboarding::Config for Test {
 	type Currency = Balances;
 	type Prop = Call;
 	type ProposalFee = ProposalFee;
+	type Slash = SlashedFee;
 	type WeightInfo = ();
 	type FeesAccount = FeesAccount;
 }
@@ -267,6 +267,25 @@ impl pallet_roles::Config for Test {
 	type Currency = Balances;
 	type WeightInfo = ();
 	type MaxMembers = MaxMembers;
+}
+parameter_types! {
+	pub const MinContribution: u64 = 5;
+	pub const FundThreshold: u64 = 100;
+	pub const MaxFundContribution: u64 = 20;
+	pub const MaxInvestorPerHouse: u32 = 10;
+	pub const HousingFundPalletId: PalletId = PalletId(*b"housfund");
+}
+
+/// Configure the pallet-housing_fund in pallets/housing_fund.
+impl pallet_housing_fund::Config for Test {
+	type Event = Event;
+	type LocalCurrency = Balances;
+	type MinContribution = MinContribution;
+	type FundThreshold = FundThreshold;
+	type MaxFundContribution = MaxFundContribution;
+	type WeightInfo = ();
+	type PalletId = HousingFundPalletId;
+	type MaxInvestorPerHouse = MaxInvestorPerHouse;
 }
 
 pub const ALICE: AccountId = AccountId::new([1u8; 32]);

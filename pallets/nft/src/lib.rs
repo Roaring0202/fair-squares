@@ -29,7 +29,8 @@
 
 //! * `burn` - Restricted to Servicer role, this function Removes a NFT item from existence
 
-//! * `destroy_collection` - Restricted to Servicer role, this function Removes a Collection from existence
+//! * `destroy_collection` - Restricted to Servicer role, this function Removes a Collection from
+//!   existence
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::unused_unit)]
@@ -42,7 +43,7 @@ use frame_support::{
 	traits::{tokens::nonfungibles::*, Get},
 	transactional, BoundedVec,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 use pallet_uniques::DestroyWitness;
 
 pub use functions::*;
@@ -78,6 +79,7 @@ pub use pallet::*;
 pub mod pallet {
 
 	use super::*;
+	//use frame_system::WeightInfo;
 	use frame_support::{pallet_prelude::*, traits::EnsureOrigin};
 	use frame_system::pallet_prelude::OriginFor;
 
@@ -197,7 +199,8 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			let coll_id: CollectionId = collection_id.value();
 
-			//ensure!(T::ReserveCollectionIdUpTo::get() != coll_id.clone().into(), Error::<T>::IdReserved);
+			//ensure!(T::ReserveCollectionIdUpTo::get() != coll_id.clone().into(),
+			// Error::<T>::IdReserved);
 			ensure!(!Self::is_id_reserved(coll_id.into()), Error::<T>::IdReserved);
 			let created_by = Roles::Pallet::<T>::get_roles(&sender).unwrap();
 			ensure!(T::Permissions::can_create(&created_by), Error::<T>::NotPermitted);
@@ -237,7 +240,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Triggered by a servicer(`origin`), this transfers NFT from owner account to `dest` account
+		/// Triggered by Root(`origin`), this transfers NFT from owner account to `dest` account
 		///
 		/// Parameters:
 		/// - `collection_id`: The Collection of the asset to be transferred.
@@ -251,10 +254,8 @@ pub mod pallet {
 			item_id: T::NftItemId,
 			dest: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
-			//the transaction is triggered by a servicer
-			let sender = ensure_signed(origin)?;
-			let triggered_by = Roles::Pallet::<T>::get_roles(&sender).unwrap();
-			ensure!(T::Permissions::can_transfer(&triggered_by), Error::<T>::NotPermitted);
+			//the transaction is triggered by Root
+			ensure_root(origin)?;
 
 			//Nft transfered from old to new owner
 			let coll_id: CollectionId = collection_id.value();
